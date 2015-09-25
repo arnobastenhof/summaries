@@ -66,7 +66,8 @@ Complete heap-ordered binary(-branching) trees are also referred to by (binary)
 heaps. Using one, we implement the operations of a priority queue as follows:
 
 (1) An item is inserted by storing it in a new node added at the end, and then
-made to 'swim' up to restore the heap ordering.
+made to 'swim' up to restore the heap ordering. (Compare this to the inner loop
+of an insertion sort.)
 
 (2) Items are removed from the root by replacing it with the contents of the
 last node (deleted afterwards), subsequently made to 'sink' down to its proper
@@ -77,8 +78,8 @@ it is likely to sink down again all the way to the bottom. As such, we can
 optimize by skipping any comparisons needed along the way to check if it is
 already in position, instead making it swim up again from the bottom if needed.
 
-With completeness guaranteeing each node (besides on the second-to-last level)
-has two children, the number of nodes doubles each level. It follows then that
+With completeness guaranteeing each node (besides on the last two levels) has
+two children, the number of nodes doubles each level. It follows then that
 insertion and removal both take a logarithmic number of compares in the worst
 case. We can build forth on this argument, however, to derive a sequential
 representation of heaps, as an alternative to the more obvious (but less space
