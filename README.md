@@ -10,8 +10,15 @@ presenting an argument that proceeds from the ground up to clarify the essential
 concepts and their relations, and to show why certain decisions have been made
 regarding their design and how these bear on whatever final conclusions have
 been reached at. This is to be contrasted with fact sheets intended solely for
-the purpose of memorization, as well as with such more spatially oriented
-designs as mind- and concept maps.
+the purpose of memorization, as well as with the use of more spatially oriented
+designs such as mind- and concept maps.
+
+I have chosen to use a plain ASCII format for my summaries, as opposed to, e.g.,
+LaTeX, DocBook or AsciiDoc. In particular, I would like to minimize the amount
+of effort needed for maintenance, viewing the fruits of these efforts solely as
+raw materials that require further processing into something more original
+before considering circulation using one of the more sophisticated formats just
+mentioned.
 
 Wherever I have literally quoted some passage from the source material, I have
 made it clear that I did as such. I have, in general, not asked for permission
