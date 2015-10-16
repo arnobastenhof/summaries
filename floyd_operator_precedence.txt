@@ -1,0 +1,147 @@
+Robert W. Floyd: Syntactic Analysis and Operator Precedence.
+
+Summarized by Arno Bastenhof
+
+Consider the following (left-recursive) grammar in BNF with start symbol expr:
+
+	  expr = term   | expr, "+", term   ;
+	  term = factor | term, "*", factor ;
+	factor = "ID"   | "(", expr, ")"    ;
+
+This grammar defines a simple expression language with binary operators + and *,
+assigning the latter higher precedence. The current article shows how to extract
+precedence relations between terminals from a subclass of phrase structure
+grammars, using them as the basis for a mechanized 'syntax-directed' analyzer.
+
+Before proceeding, we mention some notational conventions. In general, we follow
+the ISO-standard for (E)BNF. In addition, we use the following meta-symbols:
+
+	x, y, z			arbitrary strings of symbols, possibly empty
+	u, u_1, u_2, ...	non-terminal symbols
+	=*			reflexive-transitive closure of =
+
+The last convention seems counter-intuitive, owing to the ISO standard's use of
+"=" for specifying productions.
+
+In no production of our grammar above do two non-terminals occur adjacent. Note
+this observation extends to all sentential forms, i.e., sequences of symbols
+(possibly non-terminal) derivable from expr. We speak of an operator grammar.
+The following precedence relations on terminals may be defined for this class:
+
+(1) "a" = "b" iff for some x, y, u, u_1, (e.g., "(" = ")")
+
+        u = x, "a", "b", y;
+    or	u = x, "a", u_1, "b", y;
+
+(2) "a" > "b" iff for some x, y, u, u_1, (e.g., "+" < "*")
+
+        u = x, u_1, "b", y;
+    and	"a" is a Rightmost Terminal Character of some Derivative (RTCD) of u_1
+
+(3) "a" < "b" iff for some x, y, u, u_1, (e.g., "*" > "+")
+
+        u =  x, "a", u_1, y;
+    and "b" is a Leftmost Terminal Character of some Derivative (LTCD) of u_1
+
+Note that, in general, "a" > "b" need not imply "b" < "a" or vice versa.
+
+To identify all precedence relations for a given operator grammar, proceed as
+follows. First, by definition, = is read off from individual productions. E.g.,
+
+	factor = "(", expr, ")";
+
+implies "(" = ")". In contrast, the definitions of < and > require identifying
+the Left- and Rightmost Terminal Characters of each non-terminal's Derivatives:
+
+	non-terminal	LTCD			RTCD
+	-----------------------------------------------------------
+	expr		"ID", "(", "+"		"ID", ")", "+", "*"
+	term		"ID", "(", "*"		"ID", ")", "*"
+	factor		"ID", "("		"ID", ")"
+
+For example, that both "+" and "*" are RTCD's for expr follows from
+
+	expr =  expr, "+", term;
+	expr =* expr, "+", term, "*", factor;
+
+Now, we may conclude, e.g., that "+" > "+", given that
+
+		expr = expr, "+", term;
+	and	"+" is a Rightmost Terminal Character of expr's Derivatives
+
+In fact, we find that at most one precedence relation holds of any two terminals
+in our case. We speak of a precedence grammar. Using an n x n matrix for n the
+number of terminals, we can now exhaustively describe all precedence relations:
+
+		(	ID	*	+	)
+	   --------------------------------------
+	)  |			>	>	>
+	ID |			>	>	>
+	*  |	<	<	>	>	>
+	+  |	<	<	<	>	>
+	(  |	<	<	<	<	=
+
+This table can be used for bottom-up parsing. The main result enabling this is
+the means to easily identify the prime phrases of a conjectured sentential form.
+
+	y is a phrase of a sentential form x, y, z iff there exists a sentential
+	form x, u, z with u =* y. y is a prime phrase iff it contains a terminal
+	character and no prime phrase besides itself.
+
+In a precedence grammar, a string x with terminals "a_1", ..., "a_n" is prime
+relative to "b", x, "c" iff "b" < "a_1", "a_i" = "a_(i+1)" for 1 <= i <= n-1 and
+"a_n" > "c". While generalizable to the absence of either "b" or "c", we may w/h
+loss of generality assume a fresh start symbol s' and terminals "|-", "-|" s.t.
+
+	s' = "|-", s, "-|";
+
+for s the old start symbol. Given a proposed sentential form "|-", x, "-|", we
+build a skeletal derivation bottom-up by iteratively replacing the leftmost
+prime phrase with a fresh non-terminal character u_i (for i = 1, 2, ...). E.g.
+
+		"|-", "(", "ID", "+", "ID", ")", "*", "ID", "-|"
+	=*	"|-", "(",  u_1, "+", "ID", ")", "*", "ID', "-|"
+	=*	"|-", "(",  u_1, "+",  u_2, ")", "*", "ID", "-|"
+	=*	"|-", "(",             u_3, ")", "*", "ID", "-|"
+	=*	"|-",                       u_4, "*", "ID", "-|"
+	=*	"|-",                       u_4, "*",  u_5, "-|"
+	=*      "|-",                                  u_6, "-|"
+
+The problem of determining whether the original string was a sentential form is
+now reduced to solving for u_1, ..., u_6,
+
+	u_1 =* "ID";	u_3 =* u_1, "+", u_2;	u_5 =* "ID";
+	u_2 =* "ID";	u_4 =* "(", u_3, ")";	u_6 =* u_4, "*", u_5;
+
+s.t. expr =* u_6;. We have the following solution:
+
+	u_1 := expr	u_3 := expr	u_5 := factor
+	u_2 := term	u_4 := term	u_6 := term
+
+We now discuss several improvements. First, note a precedence matrix takes space
+quadratic in the number of terminals. In most cases, we can compute precedence
+functions f and g mapping terminals to numbers s.t.
+
+	"a" < "b"	implies	f("a") < g("b")
+	"a" = "b"	implies	f("a") = g("b")
+	"a" > "b"	implies f("a") > g("b")
+
+offering a linear alternative to the precedence matrix. E.g.,
+
+		")"	"ID"	"*"	"-"	")"
+	-------------------------------------------
+	f	 5	 5	 5	 3	 1
+	g	 1	 6	 4	 2	 6
+
+Next, consider the extension of our previous grammar with unary addition:
+
+	expr	= term    | expr, "+", term;
+	term    = factor  | term, "*", factor;
+	factor  = primary | "+", factor;
+	primary = "ID"    | "(", expr, ")";
+
+Since now both "*" > "+" and "*" < "+", this is no longer a precedence grammar.
+However, the latter property is restored if we represent binary and unary "+"
+by different symbols. Digging deeper, we find that the sets of symbols that
+may directly precede either usages of "+" are disjoint, and hence offer an
+alternative means to disambiguate, as opposed to using distinct symbols.
