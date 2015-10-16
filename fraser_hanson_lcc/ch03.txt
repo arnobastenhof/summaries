@@ -1,0 +1,218 @@
+Christopher Fraser and David Hanson: A retargetable C compiler
+Chapter 3, Symbol management
+
+Summarized by Arno Bastenhof
+
+During compilation, all the way through from tokenizing to code generation,
+information needs to be gathered about symbols in the source files and passed on
+to subsequent stages. What is required to this end is a data structure for the
+efficient storage and retrieval of such findings. Symbol tables fill this need.
+
+	typedef struct symbol	*Symbol;
+	typedef struct table	*Table;
+
+With one exception, each symbol lives in a namespace. ANSI C defines three such
+for regular identifiers, labels and (enum, struct and union) tags, as well as
+one each per structure or union for their members. In addition, symbols have a
+scope wherein they are visible and can be referenced. Scopes nest, and at most
+one symbol with a given name can be visible within a scope for each namespace,
+hiding the outer declarations. The constants below enumerate the various scopes.
+
+	enum { CONSTANTS = 1, LABELS, GLOBAL, PARAM, LOCAL };
+
+CONSTANTS live in a separate pool, constituting the one symbol scope not related
+to any namespace. LABELS, in turn, are scoped to the entire function wherein
+they occur. Remaining identifiers (incl. tags and members) may appear in either
+GLOBAL scope, as a function PARAMeter or LOCALly, nesting in the order given. In
+particular, LOCAL + k represents a nested local scope at depth k.
+
+	LOCAL + k -> LOCAL + k - 1 -> ... -> LOCAL (+ 0) -> PARAM -> GLOBAL
+
+A global variable tracks the current identifier scope, initialized to GLOBAL:
+
+	extern int level;
+
+Entering a scope increments this value, while exiting cleans up the Symbols (and
+types) tracked for that level before decrementing.
+
+	extern void enterscope(void);
+	extern void exitscope(void);
+
+Symbol tables are allocated per level, each collecting Symbols of a particular
+namespace and with matching scope, as revealed by their representations.
+
+struct symbol {				struct table {
+	char	*name;				int	 level;
+	int	 scope;				Table	 previous;
+	/* (more to come) */			struct entry {
+	union {						 struct symbol	 sym;
+		/* (more to come) */			 struct entry	*link;
+	}	 u;				}	*buckets[256];
+};						/* (more to come) */
+		 			};
+
+All possible attributes of symbols are stored in one structure. In particular,
+those used across the board are made first-class members, whereas attributes
+specific to one particular type of symbol (e.g., constants) appear in a union.
+
+A symbol table organizes its contents using hashing, while keeping a pointer to
+its parent scope, if any, to delegate to upon a search miss, in accordance with
+the rules of visibility. The key by which symbols are queried is composed of one
+or more of their attributes, depending on the source object that they represent.
+For those corresponding to an identifier, only the name is used.
+
+	/* Creates a new symbol for the given name at the specified level. */
+	extern Symbol install(
+		char	*name,	/* symbol key */
+		Table	*tpp,	/* reference point (see explanation below) */
+		int	 level,	/* level to install the new symbol at, or 0 */
+		int	 arena	/* arena to allocate the new symbol from */
+	);
+
+	/* Looks up a symbol by its name in a given table and its parents. */
+	extern Symbol lookup(
+		char	*name,	/* symbol key */
+		Table	 tp	/* the table to start searching from */
+	);
+
+Install may involve two dynamic allocations: one for the new Symbol (from the
+given arena), and (optionally) one from FUNC for a new Table to hold it. I.e.,
+rather than on each call to enterscope(), identifier tables are instead created
+lazily when passing in the value of the global level variable to install.
+
+To initialize a new table, install needs to know its parent. The tpp parameter,
+however, is an *address* of a Table, referencing space allocated at compile time
+
+	extern Table externals;		/* identifiers declared extern */
+	extern Table types;		/* structs and unions */
+	extern Table identifiers;	/* remaining identifiers */
+	extern Table globals;		/* identifiers' root */
+
+with each Table initialized with GLOBAL scope:
+
+	static struct table		Table externals   = &ext;
+		ext = { GLOBAL },	Table globals     = &ids;
+		ids = { GLOBAL },	Table identifiers = &ids;
+		tys = { GLOBAL };	Table types       = &tys;
+
+In particular, when identifier->level == GLOBAL, invoking
+
+	install("n", &identifier, PARAM, FUNC);
+
+creates a new Table of level PARAM and stores it in identifier (i.e., *tpp):
+
+	Table new;
+	NEW0(new, FUNC);
+	new->previous = *tpp;
+	new->level = PARAM;
+	*tpp = new;
+
+As a final note, passing in 0 for level when calling install is semantically
+equivalent to using (*tpp)->level, and so will never result in a new table.
+
+Symbols for labels or constants are stored in their own tables:
+
+	extern Table constants;		/* constant pool */
+	extern Table labels;		/* labels */
+
+Constants are scopeless, being shared across all source files, while labels are
+only (re)initialized dynamically when entering a function.
+
+	static struct table			Table constants	  = &cns;
+		cns = {	CONSTANTS },		Table labels;
+
+Below we first show the attributes unique to constants, while in addition taking
+the opportunity to introduce types. Though the latter are by no means tracked
+solely for constants, they are crucial to their identification.
+
+	struct symbol { /* (continued) */
+		Type	type;	/* Type for now treated as an opaque pointer */
+		union {
+			struct {
+				union value	v;
+				Symbol		loc;
+			}	c;
+			/* (more to come) */
+		}	u;
+	}
+
+Here, value is capable of holding any primitive- or generic pointer type, where
+type tells which. Together, said attributes form a constant symbol's search key:
+
+	extern Symbol constant(Type ty, struct value v);
+
+Constants are only ever looked for in the constant pool, obviating the need to
+pass in a Table reference. In addition, if no Symbol is found for a given key, a
+new one is installed and returned, combining the behaviors of lookup and install
+
+Note constants can be of any size that their type permits. Target architectures,
+however, often impose more stringent limits on operand sizes. In case the latter
+prove too restrictive, the compiler generates a static variable to hold the
+constant's value, storing the corresponding Symbol as u.c.loc.
+
+Next, we discuss the symbol attributes unique to labels:
+
+	struct symbol { /* (continued) */
+		union { /* (continued) */
+			struct {
+				int	label;
+				Symbol	equatedto;
+			}	l;
+		}	u;
+	}
+
+Here, equatedto may link labels that happen to reference the same location.
+Internally, labels are represented using integers, irregardless of their source
+identifier. A generator function is used to this end, maintaining a static
+counter which it increments by a specified integer on each invocation.
+
+	extern int genlabel(int n);
+
+Its integer representation also serves as the label's search key:
+
+	extern Symbol findlabel(int lab);
+
+Like for constants, findlabel combines the behaviour of searching and installing
+a Symbol into a single method. Furthermore, since only one function is compiled
+at any given moment, the Table to query is always the same (i.e., labels). 
+
+We conclude with a(n incomplete) survey of additional attributes used across the
+board. First, non-generated symbols point to their location in a source file:
+
+	struct symbol { /* (continued) */
+		struct coord {
+			char		*file;
+			unsigned	 x, y;	/* row x, column y */
+		}
+	}
+
+Second, symbols are linked in order of installment, each pointing 'up' from the
+scope where it's visible. Tables make use of this by maintaining a pointer to
+the last installed Symbol, providing a means to iterate over all symbols visible
+up through their enclosing scopes.
+
+	struct symbol {			struct table {
+		/* (continued) */		/* (continued) */
+		Symbol	up;			Symbol	all;
+	}				}
+
+The functionality of iteratively applying a function on all symbols of some
+specific level that are accessible from a given table is abstracted in a method:
+
+	extern void foreach(
+		Table	tp,				/* starting point */
+		int	level,				/* scope to filter on */
+		void	(*apply)(Symbol, void *),  	/* function to apply */
+		void	*cl				/* function closure */
+	);
+
+Though often left implicit in the source language, identifiers (i.e., excluding
+constants and labels) typically carry an extended storage class:
+
+	enum { AUTO, REGISTER, STATIC, EXTERN, TYPEDEF, ENUM };
+
+The symbol struct accommodates such information in a separate attribute:
+
+	struct symbol { /* (continued) */
+		int sclass;
+	}
