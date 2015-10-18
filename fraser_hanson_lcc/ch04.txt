@@ -1,0 +1,176 @@
+Christopher Fraser and David Hanson: A retargetable C compiler
+Chapter 4, Types
+
+Summarized by Arno Bastenhof
+
+LCC uses a linked representation of types, serving as an AST for their syntactic
+analysis in terms of type operators and -operands:
+
+	typedef struct type {
+		int	op;		/* operator code */
+		Type	type;		/* type operand */
+		int	align;		/* data alignment */
+		int	size;		/* value size in bytes */
+		union	{
+			/* ... */
+		}	u;		/* operator-specific attributes */
+	}	*Type;
+
+By convention, backends only access align and size. In particular, both the size
+and memory address of a value must be multiples of its type's alignment.
+Incomplete types, such as demonstrated by the declarations below, have size 0.
+
+	int			 a[];		/* array decl. without a size */
+	extern struct table	*identifiers;	/* opaque pointer */
+
+Type operators are identified by numeric codes, roughly encompassing specifiers,
+qualifiers and pointer-, array- and function declarators (cf. storage classes,
+which are recorded on the symbols representing a declared identifier):
+
+enum {	/* operator		operand		          description 	      */
+	CHAR, INT, UNSIGNED, /*	(none)		          }		      */
+	SHORT, LONG,         /*	(none)			  } arithmetic types  */
+	ENUM,		     /* compatible integral type  }		      */
+	FLOAT, DOUBLE,	     /* (none)			    floating types    */
+	STRUCT,		     /* (none)			  }		      */
+	UNION,		     /* (none)			  } aggregate types   */
+	ARRAY,		     /* element type		  }		      */
+	POINTER,	     /* reference type		    pointer type      */
+	FUNCTION,	     /* return type		    function type     */
+	CONST, VOLATILE,     /* unqualified type	    qualifier types   */
+	VOID }		     /* (none)			    void type	      */
+
+Void, as well as arithmetic-, floating- and aggregate types except array are in
+1-1 correspondence with Symbols (the latter through their type attribute), while
+function (proto)types record an additional list of parameter types:
+
+	struct type { /* (continued) */
+		union {
+			Symbol	 sym;	/* stored in the types symbol table */
+			Type	*proto;
+		}	u;
+	}
+
+Here, prototypes for functions with a variable number of arguments or with no
+arguments at all are represented using a (trailing) VOID type. Type symbols,
+moreover, are installed in the types table and are always allocated from PERM.
+
+Symbols for primitive types store the type name. In this, they disambiguate
+between signed- and unsigned integral types, long and int, and double and long
+double, where the type representations themselves use the same operators:
+
+Symbol name		Operator	Symbol name		Operator
+"char"			CHAR		"int"			INT
+"signed char"		CHAR		"long int"		INT
+"unsigned char"		CHAR		"unsigned int"		UNSIGNED
+"short"			SHORT		"unsigned long"		UNSIGNED
+"unsigned short"	SHORT		"double"		DOUBLE
+					"long double"		DOUBLE
+
+Pointer types all reference the same unique symbol, named "T*".
+
+STRUCTs and UNIONs use their linked symbol to store their tag name and members,
+the latter appearing in the symbol's union field alongside labels and constants:
+		
+	struct {
+		unsigned    cfields:1;	/* 1 iff there is a const field */
+		unsigned    vfields:1;	/* 1 iff there is a volatile field */
+		Field	    flist;	/* linked field list */
+	}     s;
+
+Fields are represented by a linked list (ommitting attributes for bit fields):
+
+	typedef struct field {
+		char	*name;
+		Type	 type;
+		int	 offset;      /* byte offset in the containing struct */
+		Field	 link;
+	} *Field;
+
+Fields are always allocated from PERM, using the following exported constructor:
+
+	Field newfield(
+		char	*name,	/* field name */
+		Type	 ty,	/* structure type */
+		Type	 fty);	/* field type */
+
+An ENUM is represented as a struct or union w/h a field list. More specifically,
+its linked symbol's name bears its tag (or a generated numeral if absent), while
+constants are recorded in the symbol's union field using a null-terminated array
+
+	Symbol	*idlist;
+
+The preceding discussion detailed the representation of types, based on a cate-
+gorization by operator code. The latter may be tested by a number of macros. E.g
+
+	#define isqual(t)	((t)->op >= CONST)
+
+tests whether a given type is qualified. Along the same lines, we have
+
+isvolatile(t)	isstruct(t)	isptr(t)	isfloat(t)	isdouble(t)
+isconst(t)	isunion(t)	ischar(t)	isarith(t)	isscalar(t)
+isarray(t)	isfunc(t)	isint(t)	isunsigned(t)	isenum(t)
+
+Next, we discuss how types are managed in memory. Similar to the string module,
+only a single copy is stored for each type, reducing their comparison to one of
+memory addresses. The underlying data structure is that of a hash set:
+
+	static struct entry {
+		struct type	 type;
+		struct entry	*link;
+	} *typetable[128];
+
+The following function searches the above set for a type whose attributes match
+its parameters. It may also create a new entry (from PERM), doing so always for
+function- and incomplete array types, or else in case of a search miss.
+
+	static Type type(int op, int size, int align, Type ty, Symbol sym);
+
+The above function is kept private to the types module, which instead exposes
+global variables for primitive- and generic pointer types (used to initialize
+typetable with), as well as constructors and destructors for composite types.
+
+extern Type chartype;	  extern Type longtype;       extern Type unsignedshort;
+extern Type doubletype;	  extern Type shorttype;      extern Type unsignedtype;
+extern Type floattype;	  extern Type signedchar;     extern Type voidptype;
+extern Type inttype;	  extern Type unsignedchar;   extern Type voidtype;
+extern Type longdouble;	  extern Type unsignedlong;
+
+The function typeInit() initializes the above types and adds them to typetable.
+
+	extern void typeInit();
+
+Type constructors build composite types or decompose them into their components:
+
+Constructor				Constructor		Description
+------------------------------------------------------------------------------
+Type ptr(Type ty);			Type deref(Type ty)	pointer types
+Type array(Type ty, int n, int a);				array types
+Type qual(int op, Type ty);		unqual(t) (macro)	qualified types
+Type func(Type ty, Type *proto);	Type freturn(Type ty);	function types
+Type newstruct(int op, char *tag);				structs, unions
+								and enums
+
+In addition, array types may be converted into pointers, as is needed, e.g.,
+when appearing as function parameters:
+
+	Type atop(Type ty);
+
+The above methods already incorporate a rudimentary form of type-checking. For
+instance, attempting to derefence a type that's not a pointer invokes
+
+	error("type error: %s\n", "pointer expected");
+
+More sophisticated logic auxiliary to type-checking is exposed by methods
+
+	int eqtype(Type ty1, Type ty2, int ret); /* Checks type compatibility */
+	Type compose(Type t1, Type ty2);	 /* Composes compatible types */
+
+eqtype checks for compatibility of ty1 and ty2, returning ret if either one is
+incomplete. Compatibility is reflexive (i.e., true if ty1 == ty2), while always
+returning false for types with different operators. Remaining conditions depend
+on the operator and are implemented recursively, based on ANSI C standards.
+
+Type composition is defined only for compatible types, amounting to the homo-
+morphic extension of the necessary logic for resolving cases where either one
+is an incomplete array type, or types a function without a prototype.
