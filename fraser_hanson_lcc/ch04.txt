@@ -40,6 +40,21 @@ enum {	/* operator		operand		          description 	      */
 	CONST, VOLATILE,     /* unqualified type	    qualifier types   */
 	VOID }		     /* (none)			    void type	      */
 
+A number of type predicates is defined for testing a type's operator code. E.g.,
+
+	#define isqual(t)	((t)->op >= CONST)
+
+The definition of such predicates is facilitated by expressing the co-occurrence
+of const and volatile by a single code CONST+VOLATILE, simplifying access to a
+type's unqualified form. For example, to decide if some type is an array, ...
+
+	#define unqual(t)	(isqual(t) ? (t)->type : (t))
+	#define isarray(t)	(unqual(t)->op == ARRAY)
+
+Predicates for the qualifiers themselves, however, do now become more complex:
+
+	#define isconst(t)	((t)->op == CONST || (t)->op == CONST+VOLATILE)
+
 Void, as well as arithmetic-, floating- and aggregate types except array are in
 1-1 correspondence with Symbols (the latter through their type attribute), while
 function (proto)types record an additional list of parameter types:
@@ -57,15 +72,11 @@ moreover, are installed in the types table and are always allocated from PERM.
 
 Symbols for primitive types store the type name. In this, they disambiguate
 between signed- and unsigned integral types, long and int, and double and long
-double, where the type representations themselves use the same operators:
+double, where the type representations themselves use the same operators. E.g.,
 
 Symbol name		Operator	Symbol name		Operator
-"char"			CHAR		"int"			INT
-"signed char"		CHAR		"long int"		INT
-"unsigned char"		CHAR		"unsigned int"		UNSIGNED
-"short"			SHORT		"unsigned long"		UNSIGNED
-"unsigned short"	SHORT		"double"		DOUBLE
-					"long double"		DOUBLE
+"int"			INT		"unsigned int"		UNSIGNED
+"long int"		INT		"unsigned long"		UNSIGNED
 
 Pointer types all reference the same unique symbol, named "T*".
 
@@ -100,20 +111,10 @@ constants are recorded in the symbol's union field using a null-terminated array
 
 	Symbol	*idlist;
 
-The preceding discussion detailed the representation of types, based on a cate-
-gorization by operator code. The latter may be tested by a number of macros. E.g
-
-	#define isqual(t)	((t)->op >= CONST)
-
-tests whether a given type is qualified. Along the same lines, we have
-
-isvolatile(t)	isstruct(t)	isptr(t)	isfloat(t)	isdouble(t)
-isconst(t)	isunion(t)	ischar(t)	isarith(t)	isscalar(t)
-isarray(t)	isfunc(t)	isint(t)	isunsigned(t)	isenum(t)
-
-Next, we discuss how types are managed in memory. Similar to the string module,
-only a single copy is stored for each type, reducing their comparison to one of
-memory addresses. The underlying data structure is that of a hash set:
+The preceding discussion detailed the representation of types. Next, we discuss
+how types are managed in memory. Similar to the string module, only a single
+copy is stored for each type, reducing their comparison to one of memory
+addresses. The underlying data structure is that of a hash set:
 
 	static struct entry {
 		struct type	 type;
@@ -127,14 +128,11 @@ function- and incomplete array types, or else in case of a search miss.
 	static Type type(int op, int size, int align, Type ty, Symbol sym);
 
 The above function is kept private to the types module, which instead exposes
-global variables for primitive- and generic pointer types (used to initialize
-typetable with), as well as constructors and destructors for composite types.
+global variables for primitive- and generic pointer types, used to initialize
+typetable with. The following selection serves as illustration:
 
-extern Type chartype;	  extern Type longtype;       extern Type unsignedshort;
-extern Type doubletype;	  extern Type shorttype;      extern Type unsignedtype;
-extern Type floattype;	  extern Type signedchar;     extern Type voidptype;
-extern Type inttype;	  extern Type unsignedchar;   extern Type voidtype;
-extern Type longdouble;	  extern Type unsignedlong;
+extern Type inttype;	extern Type unsignedtype;	extern Type voidtype;
+extern Type longtype;	extern Type unsignedlong;	extern Type voidptype;
 
 The function typeInit() initializes the above types and adds them to typetable.
 
@@ -142,7 +140,7 @@ The function typeInit() initializes the above types and adds them to typetable.
 
 Type constructors build composite types or decompose them into their components:
 
-Constructor				Constructor		Description
+Constructor							Description
 ------------------------------------------------------------------------------
 Type ptr(Type ty);			Type deref(Type ty)	pointer types
 Type array(Type ty, int n, int a);				array types
