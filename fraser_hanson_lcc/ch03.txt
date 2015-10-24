@@ -177,19 +177,10 @@ a Symbol into a single method. Furthermore, since only one function is compiled
 at any given moment, the Table to query is always the same (i.e., labels). 
 
 We conclude with a(n incomplete) survey of additional attributes used across the
-board. First, non-generated symbols point to their location in a source file:
-
-	struct symbol { /* (continued) */
-		struct coord {
-			char		*file;
-			unsigned	 x, y;	/* row x, column y */
-		}
-	}
-
-Second, symbols are linked in order of installment, each pointing 'up' from the
-scope where it's visible. Tables make use of this by maintaining a pointer to
-the last installed Symbol, providing a means to iterate over all symbols visible
-up through their enclosing scopes.
+board. First, symbols are linked in order of installment, each pointing 'up'
+from the scope where it's visible. Tables make use of this by maintaining a
+pointer to the last installed Symbol, providing a means to iterate over all
+symbols visible up through their enclosing scopes.
 
 	struct symbol {			struct table {
 		/* (continued) */		/* (continued) */
