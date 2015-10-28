@@ -20,27 +20,27 @@ A simple expression language is thus defined with binary operators + and *,
 assigning the latter higher precedence. The current article shows how to extract
 such precedence relations from a subclass of phrase structure grammars and uses
 them for a bottom-up parsing procedure, characterized by the 'reducing' of a
-proposed sentential form through the inverse application of productions. The
-search space is narrowed by imposing ordering constraints on such 'reductions'
-and showing these to come at no loss of generality, effectively providing a no-
-tion of 'canonical parse'. In practice, the latter term is usually reserved for
-one such concrete proposal, based on the concept of a simple phrase
+sentential form through the repeated inverse application of productions. The ex-
+pansion of a production is recognized in a sentential form as a 'simple phrase':
 
 	y is a (simple) phrase of a sentential form x, y, z iff there exists a
 	sentential form x, u, z with u =* y; (u = y;).
 
-A canonical parse, in the sense commonly understood, proceeds by repeatedly re-
-ducing a leftmost simple phrase. Hence, if an efficient means is known for re-
-cognizing a simple phrase, then such may be used as the basis for the mechanic
-construction of canonical parses.
+If an efficient means is known for recognizing simple phrases, such can be used
+as the basis for a non-deterministic parsing procedure, based on the observation
+that their repeated reduction is guaranteed to halt (signaling success if the
+start symbol was reached). Note 'non-deterministic' means we may be required to
+back up on a previous choice for the next simple phrase to reduce if we are to
+find all possible derivation trees (even if there's only one.)
 
 The program carried out by Floyd is roughly as sketched above. As is typical for
 such efforts, he restricts to a subclass of all phrase structure grammars. In
 particular, with the problem of determining their ambiguity undecidable in ge-
 neral, the challenge is usually perceived as discerning a wide enough subclass
-for which this property can be shown to hold while admitting efficient parsing.
-The restrictions chosen by Floyd, however, sugest a natural alternative to
-simple phrases, resulting as well in a different notion of canonical parse.
+that satisfies this property while admitting refinements to the above parsing
+method that render it deterministic, obviating the need to back up for finding
+a sentence's now unique derivation tree. The restrictions chosen by Floyd,
+however, sugest a natural alternative to simple phrases.
 
 Returning to our sample grammar, we observe that in none of its productions do
 two non-terminals occur adjacent. This observation can be shown to extend to all
@@ -61,12 +61,8 @@ As seen, a prime phrase need not also be a simple phrase. In particular, it may
 itself contain simple phrases comprised of only a non-terminal. However, by re-
 peatedly reducing the latter, the result is always a prime phrase that is simple
 
-Replacing simple- with prime phrases as the main conceptual unit for syntactic
-analysis (at least for operator grammars) likewise requires revising our notion
-of canonical parse. We shall now identify the latter by the repeated reduction
-of a leftmost prime phrase, together with any reductions of lonely non-terminals
-as needed to do so. Floyd's main result is the definition of several relations
-on a grammar's terminals that allow to efficiently recognize prime phrases:
+Floyd's main result is the definition of several relations on a grammar's
+terminals that allow to efficiently recognize prime phrases:
 
 (1) "a" = "b" iff for some x, y, u, u_1, (e.g., "(" = ")")
 
@@ -120,10 +116,9 @@ using an n x n matrix for n the number of terminals:
 	+  |	<	<	<	>	>
 	(  |	<	<	<	<	=
 
-Operator grammars satisfying the above property can be shown non-ambiguous, thus
-warranting the use of a special designator, i.e., that of a precedence grammar.
-We shall focus exclusively on them below, with matrices such as above used for
-performing lookups in what essentially becomes table-driven parsing.
+Operator grammars satisfying the above property are designated precedence
+grammars. We shall focus exclusively on them below, with matrices such as above
+used for performing lookups in what essentially becomes table-driven parsing.
 
 It can be shown that a string x with terminals "a_1", ..., "a_n" is prime rela-
 tive to "b", x, "c" iff "b" < "a_1", "a_i" = "a_(i+1)" for 1 <= i <= n-1 and
@@ -133,8 +128,8 @@ loss of generality assume a fresh start symbol s' and terminals "|-", "-|" s.t.
 	s' = "|-", s, "-|";
 
 for s the old start symbol. Given a proposed sentential form "|-", x, "-|", we
-build a skeletal derivation bottom-up by iteratively replacing a leftmost prime
-phrase with a fresh non-terminal character u_i (for i = 1, 2, ...). E.g.,
+build a skeletal derivation bottom-up by iteratively replacing a prime phrase
+with a fresh non-terminal character u_i (for i = 1, 2, ...). E.g.,
 
 		"|-", "(", "ID", "+", "ID", ")", "*", "ID", "-|"
 	=*	"|-", "(",  u_1, "+", "ID", ")", "*", "ID', "-|"
@@ -155,6 +150,10 @@ expr = term, term = factor and factor = ID:
 
 	u_1 := expr	u_3 := expr	u_5 := factor
 	u_2 := term	u_4 := term	u_6 := term
+
+It can be shown that precedence grammars are non-ambiguous, and that always
+restricting to the reduction of the leftmost prime phrase suffices for deciding
+derivability without any need for backing up.
 
 We now discuss several improvements. First, note a precedence matrix takes space
 quadratic in the number of terminals. In most cases, we can compute precedence
