@@ -1,0 +1,50 @@
+Niklaus Wirth and Helmut Weber: EULER: A Generalization of ALGOL, and its Formal
+Definition: Part I
+
+Summarized by Arno Bastenhof
+
+The present article identifies a superset of Floyd's precedence grammars that
+preserves their non-ambiguity, obtained by dropping the restriction to operator
+grammars. Through the latter act, prime phrases lose their significance and are
+supplanted with the more familiar simple phrases, whose repeated leftmost reduc-
+tions define a canonical parse. A method is provided for the latter's mechanical
+construction, made possible by generalizing Floyd's precedence relations to the
+whole of a grammar's vocabulary, as opposed to only its terminal symbols.
+
+Redefining precedence relations similarly requires reconsidering the auxiliary
+notion of a left- or rightmost terminal character of some non-terminal's deri-
+vatives. Specifically, their fixation on terminal characters may be relaxed to
+include any (possibly non-terminal) left- or rightmost symbol s:
+
+    L(u) = { s | u =* s, x; for some x }
+         = { s | u =  s, x; or [ u = u1, x; and s in L(u1) ] }
+
+    R(u) = { s | u =* x, s; for some x }
+         = { s | u =  x, s; or [ u = x, u1; and s in R(u1) ] }
+
+Letting s1, s2 range over all vocabulary symbols, we then have:
+
+    s1 = s2  iff  u = x, s1, s2, y; for some u, x, y
+    s1 < s2  iff  u = x, s1, u', y; and s2 in L(u') for some u, u', x, y
+    s1 > s2  iff  u = x, u', s2, y; and s1 in R(u') for some u, u', x, y
+              or  u = x, u1, u2, y; and s1 in R(u1) and s2  in R(u2)
+                  for some u, u1, u2, x, y
+
+The definitions of = and < are straightforward compared to Floyd's, as is the
+first disjunct of that for >. The second, however, may at first seem foreign,
+but follows naturally from the interpretation that s1 > s2 implies s1 is reduced
+before s2, taking into account that canonical derivations proceed rightmost.
+
+A grammar for which at most one precedence relation holds between any pair of
+vocabulary symbols is called a simple precedence grammar. Note this class pro-
+perly includes (regular) precedence grammars.
+
+The precedence relations may be used for recognizing simple phrases, similarly
+to how their specializations to terminal characters allowed identifying prime
+phrases. The resulting parsing algorithm differs from Floyd's mainly in its
+construing of complete derivations, as opposed to 'skeletal' forms containing
+dummy non-terminals.
+
+Note that with the extended domain for the precedence relations, the resulting
+matrices grow significantly in size as well. However, as with regular precedence
+grammars, precedence functions can be shown to exist for most practical cases.
