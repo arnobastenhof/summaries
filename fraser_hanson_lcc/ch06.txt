@@ -6,37 +6,37 @@ Summarized by Arno Bastenhof
 LCC handles input buffering in a separate module, exposing its state directly by
 global variables to shortcut access time.
 
-	extern unsigned char	*cp;	/* character currently being read */
-	extern unsigned char	*limit; /* end of buffer */
+    extern unsigned char    *cp;    /* character currently being read */
+    extern unsigned char    *limit; /* end of buffer */
 
 Note unsigned representations are used to prevent sign extension. Limit points
 to a sentinel '\n', placed one character past the buffered input. As a result,
 the lexer can use the simple idiom *cp++ to read and advance the character poin-
 ter, delegating bound checks to the input module's processing of newlines via
 
-	extern void nextline(void);
+    extern void nextline(void);
 
 setting global state to help track the source coordinates of *cp:
 
-	extern char	*line;		/* first character of current line */
-	extern int	 lineno;	/* line number (*cp's y coordinate) */
+    extern char    *line;   /* first character of current line */
+    extern int     lineno;  /* line number (*cp's y coordinate) */
 
 In particular, *cp's x-coordinate is easily computed using pointer arithmetic by
 
-	cp - line;
+    cp - line;
 
 Note nextline must explicitly check if it was called because of a sentinel new-
 line. If so, instead of incrementing lineno, it must rather refill the buffer:
 
-	extern int infd;		/* descriptor for the input file */
-	extern void fillbuf(void);	/* (re)fills the buffer from infd */
+    extern int infd;            /* descriptor for the input file */
+    extern void fillbuf(void);  /* (re)fills the buffer from infd */
 
 Besides indirectly through nextline, fillbuf may be called directly by the lexer
 as well on two occasions, both serving to ensure that the next token to be read
 (unless when a string literal, discussed below) is always fully represented in
 the input buffer. In most cases, the token size is bounded by
 
-	#define MAXTOKEN 32
+    #define MAXTOKEN 32
 
 defined private to the lexer. Thus, when queried for a new token, it must first
 call fillbuf in case limit - cp < MAXTOKEN. (In fact, for optimization, the
@@ -44,7 +44,7 @@ lexer copies cp into an automatic register variable rcp, as discussed below.)
 
 For identifiers, LCC increases the maximum size to that of a line, set to
 
-	#define MAXLINE 512
+    #define MAXLINE 512
 
 by the input module's interface. (Note the ANSI standard only guarantees a lower
 bound of 31 characters on an identifier's maximum size.) Thus, before reading in
@@ -53,18 +53,18 @@ that limit - cp < MAXLINE. (Or actually, as mentioned, limit - rcp < MAXLINE.)
 
 Privately, the input module represents the buffer as follows:
 
-	static int		bsize;
-	static unsigned char	buffer[MAXLINE+1 + BUFSIZE+1];
+    static int              bsize;
+    static unsigned char    buffer[MAXLINE+1 + BUFSIZE+1];
 
 where BUFSIZE is a macro-defined constant exposed by its interface:
 
-	#define BUFSIZE		4096
+    #define BUFSIZE     4096
 
 The buffer's organization reflects fillbuf's dual usage. Either way, the latter
 reads new characters into &buffer[MAXLINE+1] and onwards. If called by nextline,
 meaning cp == limit, or when invoked as part of initialization,
 
-	extern void inputInit(void);
+    extern void inputInit(void);
 
 the first unconsumed character coincides with &buffer[MAXLINE+1] and cp is set
 thereto. However, when called by the lexer (iff limit-cp < MAXLINE), the buffer
@@ -79,8 +79,8 @@ value < 0 is used to indicate the initial state or to signal a read error.
 
 The following exposed variables complete our survey of the input module:
 
-	extern char	*file;		/* name of current input file */
-	extern char	*firstfile;	/* name of first input file */
+    extern char    *file;       /* name of current input file */
+    extern char    *firstfile;  /* name of first input file */
 
 Together with line and lineno, the first of these is used to pinpoint the source
 coordinates of the next input token. firstfile is used in error messages. 
@@ -95,9 +95,9 @@ and columns by argument positions.  To distinguish between tokens whose matching
 string consists of a single character versus those that may use more, separate
 rows yy and (resp.) xx are used, the following being examples of their usage: 
 
-        /* enum constant, token type,	, ...,	string value */
-	xx(STRUCT,	  9,		, ...,	"struct" )
-	yy(0,		  42,		, ...,	"*"      )
+    /* enum constant,   token type,     ...,    string value */
+    xx(STRUCT,          9,              ...,    "struct" )
+    yy(0,               42,             ...,    "*"      )
 
 Seven attributes are distinguished, with three shown above: an enumeration con-
 stant, a numeric identifier (the token type or code) and a string representation
@@ -106,12 +106,12 @@ ration constants, motivated below. token.h is multiply included, always in the
 scope of a different preprocessor definition, using varying subsets of attribu-
 tes. For example, the lexer defines enumeration constants for token codes by
 
-	enum {
-		#define xx(a, b, c, d, e, f, g) a=b,
-		#define yy(a, b, c, d, e, f, g)
-		#include "token.h"
-		LAST
-	};
+    enum {
+        #define xx(a, b, c, d, e, f, g) a=b,
+        #define yy(a, b, c, d, e, f, g)
+        #include "token.h"
+        LAST
+    };
 
 Note yy-rows are ignored, their code coinciding with the numeric value of the
 single matched character, with a separate enumeration constant hence superfluous
@@ -120,68 +120,68 @@ The lexer exposes the current token by global variables holding its type, the
 matched string and its source coordinates, as well as the Symbol generated for
 it (optional, depending on the token type):
 
-	extern int		 t;	/* token code / type */
-	extern char		*token; /* matched string */
-	extern Symbol		 tsym;	/* created symbol */
-	extern Coordinate	 src;	/* source coordinates */
+    extern int          t;      /* token code / type */
+    extern char         *token; /* matched string */
+    extern Symbol       tsym;   /* created symbol */
+    extern Coordinate   src;    /* source coordinates */
 
 Here, src collects the token's source coordinates, retrieved from the input mo-
 dule as explained above:
 
-	typedef struct coord {
-		char		*file;
-		unsigned	 x, y;	/* row x, column y */
-	} Coordinate;
+    typedef struct coord {
+        char        *file;
+        unsigned     x, y;    /* row x, column y */
+    } Coordinate;
 
 To help generate error messages and to aid in debugging, these data are recorded
 on tsym as well, provided it is set (cf. Ch. 3):
 
-	struct symbol {
-		/* ... */
-		Coordinate	src;
-	}
+    struct symbol {
+        /* ... */
+        Coordinate    src;
+    }
 
 The idiom t = gettok(); reads the next token, causing token, tsym and src to be
 reset as a side-effect.
 
-	extern int	gettok(void);
+    extern int    gettok(void);
 
 Internally, it switches on the first unconsumed character in the input buffer.
 To ease implementation, characters are categorized into one of six sets:
 
-	enum {
-		BLANK = 01,	/* any whitespace character beside newline */
-		NEWLINE = 02,	/* '\n' */
-		LETTER = 04,	/* lower- and uppercase letters */
-		DIGIT = 010,	/* 0-9 */
-		HEX = 020,	/* a-f, A-F */
-		OTHER = 040	/* remaining characters in the ANSI standard */
-	};
+    enum {
+        BLANK = 01,    /* any whitespace character beside newline */
+        NEWLINE = 02,    /* '\n' */
+        LETTER = 04,    /* lower- and uppercase letters */
+        DIGIT = 010,    /* 0-9 */
+        HEX = 020,    /* a-f, A-F */
+        OTHER = 040    /* remaining characters in the ANSI standard */
+    };
 
 Membership is tested by using these constants as bitmasks with the array
 
-	static unsigned char map[256] = { /* ... */ };
+    static unsigned char map[256] = { /* ... */ };
 
 s.t., e.g.,
 
-	map['c'] & BLANK & HEX != 0
+    map['c'] & BLANK & HEX != 0
 
 For characters c not covered by the standard, map[c] is initialized with 0. Note
 the above idiom replaces functions isalpha, isdigit, etc. used in typical com-
 piler textbooks. Further optimization is achieved by only ever indexing map
 with a register variable, which gettok defines privately to hold cp's contents:
 
-	int gettok() {
-		for (;;) {
-			register unsigned char *rcp = cp;
-			/* skip white space */
-			/* refill input buffer if limit - rcp < MAXTOKEN */
-			/* set src using file, line and lineno */
-			switch (*rcp++) {
-				/* switch cases */
-			}
-		}
-	}
+    int gettok() {
+        for (;;) {
+            register unsigned char *rcp = cp;
+            /* skip white space */
+            /* refill input buffer if limit - rcp < MAXTOKEN */
+            /* set src using file, line and lineno */
+            switch (*rcp++) {
+                /* switch cases */
+            }
+        }
+    }
 
 While extra bookkeeping is needed to keep rcp and cp synchronzed, the gains in
 speed are worth the effort. The switch cases are mostly typical, with the prev.
@@ -193,11 +193,11 @@ For efficiency reasons, keyword recognition is handled by hardcoding each case
 individually into gettok's switch statement, as opposed to collecting them in a
 lookup table. Thus, for instance, we may encounter
 
-	case 'a'
-		if (rcp[0] == 'u' && rcp[1] == 't' && rcp[2] == 'o'
-			&& !(map[rcp[3]]&(DIGIT|LETTER)))
-				return AUTO;	/* token code for "auto" */
-		goto id;
+    case 'a'
+        if (rcp[0] == 'u' && rcp[1] == 't' && rcp[2] == 'o'
+                && !(map[rcp[3]]&(DIGIT|LETTER)))
+            return AUTO;    /* token code for "auto" */
+        goto id;
 
 On encountering 'a', we look ahead in the input buffer to check for the keyword
 "auto" (relying on cp - limit >= MAXTOKEN), otherwise jumping to the code for

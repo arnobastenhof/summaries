@@ -11,57 +11,57 @@ Space for dynamic memory allocations is reserved in larger units called blocks.
 A single block newly created after m allocation requests for byte quantities
 n_1, ..., n_m is laid out in memory as follows:
 
-	|-----------------------------------|
-	| sizeof(union header)              |
-	|-----------------------------------|
-	| roundup(n_1, sizeof(union align)) |	}
-	|-----------------------------------|	} round(
-	| ...                               |	}       n_1,
-	|-----------------------------------|	}       sizeof(union(align))
-	| roundup(n_m, sizeof(union align)) |	}      )
-avail->	|-----------------------------------|	} + 10 * 1024
-	| (allocable space)                 |	}
+        |-----------------------------------|
+        | sizeof(union header)              |
+        |-----------------------------------|
+        | roundup(n_1, sizeof(union align)) |   }
+        |-----------------------------------|   } round(
+        | ...                               |   }       n_1,
+        |-----------------------------------|   }       sizeof(union(align))
+        | roundup(n_m, sizeof(union align)) |   }      )
+avail->	|-----------------------------------|   } + 10 * 1024
+        | (allocable space)                 |   }
 limit->	|-----------------------------------|	
 
 Each requested size n_i (1 <= i <= m) is rounded up to the most restrictive
 quantity dictated by alignment requirements:
 
 	union align {
-		long	 l;
+		long	l;
 		char	*p;
-		double	 d;
-		int	(*f)(void);
+		double	d;
+		int     (*f)(void);
 	}
 
 Blocks start with a header, keeping pointers avail and limit to their next- and
 last allocable bytes resp. Headers furthermore combine blocks into linked lists:
 
-	union header {			struct block {
-		struct block	b;		struct block	*next;
-		union align	a;		char		*limit;
-	}					char		*avail;
-					}
+    union header {          struct block {
+        struct block    b;      struct block    *next;
+        union align     a;      char            *limit;
+    }					        char            *avail;
+                            }
 
 Finally, when an allocation request comes in for some size n that requires the
 creation of a new block, enough space is reserved for an additional 10K:
 
-	malloc(m);
+    malloc(m);
 
 where
 
-	n = roundup(n, sizeof(union align));
-	m = sizeof (union header) + n + 10*1024;
+    n = roundup(n, sizeof(union align));
+    m = sizeof (union header) + n + 10*1024;
 
 both of type unsigned long to guarantee they can represent the size_t values
 returned by sizeof. The block header is initialized as follows:
 
-	hp->limit = (char *)hp + m;
-	hp->avail = (char *)((union header *)hp + 1);
-	hp->next  = NULL;
+    hp->limit = (char *)hp + m;
+    hp->avail = (char *)((union header *)hp + 1);
+    hp->next  = NULL;
 
 for hp a pointer to the struct containing the header's contents:
 
-	struct block	*hp;
+    struct block	*hp;
 
 Memory is allocated from multiple linked lists of blocks, called arenas. In
 particular, deallocation applies to whole arenas at once, thus basing storage
@@ -73,26 +73,26 @@ relatively costly and error-prone, causing memory leaks and dangling pointers.
 Arenas are known statically using global definitions, initializing their first
 block to a sentinel containing only a header with limit and avail set to NULL.
 
-	static struct block
-		 first[] = { { NULL }, { NULL }, { NULL } },
-		*arena[] = { &first[0], &first[1], &first[2] };
+    static struct block
+         first[] = { { NULL }, { NULL }, { NULL } },
+        *arena[] = { &first[0], &first[1], &first[2] };
 
 Between allocations, arenas are always updated to point to their current block,
 whereas first retains pointers to their sentinels. Here, only three arenas are
 declared, known by clients through unsigned numeric identifiers corresponding
 under the hood to their array indices.
 
-	enum { PERM=0, FUNC, STMT };
+    enum { PERM=0, FUNC, STMT };
 
 The following exported functions make up the resulting API:
 
-	extern void *allocate(unsigned long n, unsigned a);
-	extern void  deallocate(unsigned a);
+    extern void *allocate(unsigned long n, unsigned a);
+    extern void  deallocate(unsigned a);
 
 After deallocation, an arena is reset to point to its sentinel. Its blocks,
 rather than freed, are kept around for reuse in a single linked list:
 
-	static struct block *freeblocks;
+    static struct block *freeblocks;
 
 Specifically, each time allocation necessitates appending the targeted arena
 with another block, first freeblocks is sequentially searched for one large
@@ -100,20 +100,20 @@ enough to serve the request before resorting to the creation of a new block.
 
 Several convenience functions and macro's complete the interface:
 
-	#define NEW(p, a)	((p) = allocate(sizeof *(p), (a)))
-	#define NEW0(p, a)	memset(NEW((p),(a)), 0, sizeof *(p))
+    #define NEW(p, a)   ((p) = allocate(sizeof *(p), (a)))
+    #define NEW0(p, a)  memset(NEW((p),(a)), 0, sizeof *(p))
 
-	extern void newarray(unsigned long m, unsigned long n, unsigned a);
+    extern void newarray(unsigned long m, unsigned long n, unsigned a);
 
 LCC's string module uses a hash set to permanently allocate in PERM a single
 copy for each string. In particular, comparisons can then be done quickly based
 on memory addresses, making them suitable for use as keys in symbol tables.
 
-	static struct string {
-		char		*str;
-		int		 len;
-		struct string	*link;
-	} *buckets[1024];
+    static struct string {
+        char		*str;
+        int		 len;
+        struct string	*link;
+    } *buckets[1024];
 
 Exported functions allow both the copying of an argument string (either null-
 terminated or for an explicitly declared length), as well as for the creation

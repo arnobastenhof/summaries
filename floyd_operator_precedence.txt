@@ -4,17 +4,17 @@ Summarized by Arno Bastenhof
 
 We adopt the ISO-standard for (E)BNF, augmented by the following conventions:
 
-	x, y, z			arbitrary strings of symbols, possibly empty
-	u, u_1, u_2, ...	non-terminal symbols
-	=*			reflexive-transitive closure of =
+    x, y, z             arbitrary strings of symbols, possibly empty
+    u, u_1, u_2, ...    non-terminal symbols
+    =*                  reflexive-transitive closure of =
 
 The last notation may seem redundant, owing to the ISO standard's use of "="
 (suggesting symmetry) for specifying productions. The following (left-recursive)
 grammar in BNF with start symbol expr will recur for purposes of illustration:
 
-	  expr = term   | expr, "+", term   ;
-	  term = factor | term, "*", factor ;
-	factor = "ID"   | "(", expr, ")"    ;
+    expr   = term   | expr, "+", term   ;
+    term   = factor | term, "*", factor ;
+    factor = "ID"   | "(", expr, ")"    ;
 
 A simple expression language is thus defined with binary operators + and *,
 assigning the latter higher precedence. The current article shows how to extract
@@ -23,8 +23,8 @@ them for a bottom-up parsing procedure, characterized by the 'reducing' of a
 sentential form through the repeated inverse application of productions. The ex-
 pansion of a production is recognized in a sentential form as a 'simple phrase':
 
-	y is a (simple) phrase of a sentential form x, y, z iff there exists a
-	sentential form x, u, z with u =* y; (u = y;).
+    y is a (simple) phrase of a sentential form x, y, z iff there exists a
+    sentential form x, u, z with u =* y; (u = y;).
 
 If an efficient means is known for recognizing simple phrases, such can be used
 as the basis for a non-deterministic parsing procedure, based on the observation
@@ -49,13 +49,13 @@ such grammars, a simple phrase consists of either a single non-terminal, or else
 contains at least one terminal symbol (ignoring empty productions). By ignoring
 the former, we naturally arrive at the notion of a prime phrase:
 
-	A phrase is prime iff it contains at least one terminal character and no
-	prime phrases beside itself.
+    A phrase is prime iff it contains at least one terminal character and no
+    prime phrases beside itself.
 
 The following are examples of prime phrases, based on our previous grammar:
 
-	expr, "+', term		factor, "+", term
-	term, "+', term		factor, "+", factor
+    expr, "+', term     factor, "+", term
+    term, "+', term     factor, "+", factor
 
 As seen, a prime phrase need not also be a simple phrase. In particular, it may
 itself contain simple phrases comprised of only a non-terminal. However, by re-
@@ -67,12 +67,12 @@ terminals that allow to efficiently recognize prime phrases:
 (1) "a" = "b" iff for some x, y, u, u_1, (e.g., "(" = ")")
 
         u = x, "a", "b", y;
-    or	u = x, "a", u_1, "b", y;
+    or  u = x, "a", u_1, "b", y;
 
 (2) "a" > "b" iff for some x, y, u, u_1, (e.g., "+" < "*")
 
         u = x, u_1, "b", y;
-    and	"a" is a Rightmost Terminal Character of some Derivative (RTCD) of u_1
+    and "a" is a Rightmost Terminal Character of some Derivative (RTCD) of u_1
 
 (3) "a" < "b" iff for some x, y, u, u_1, (e.g., "*" > "+")
 
@@ -83,38 +83,38 @@ Before showing how these relations aid in the identification of prime phrases,
 we first describe their effective computation. First, by definition, = is read
 off from individual productions. E.g.,
 
-	factor = "(", expr, ")";
+    factor = "(", expr, ")";
 
 implies "(" = ")". In contrast, the definitions of < and > require identifying
 the Left- and Rightmost Terminal Characters of each non-terminal's Derivatives:
 
-	non-terminal	LTCD			RTCD
-	-----------------------------------------------------------
-	expr		"ID", "(", "+"		"ID", ")", "+", "*"
-	term		"ID", "(", "*"		"ID", ")", "*"
-	factor		"ID", "("		"ID", ")"
+    non-terminal    LTCD                RTCD
+    -----------------------------------------------------------
+    expr            "ID", "(", "+"      "ID", ")", "+", "*"
+    term            "ID", "(", "*"      "ID", ")", "*"
+    factor          "ID", "("           "ID", ")"
 
 For example, that both "+" and "*" are RTCD's for expr follows from
 
-	expr =  expr, "+", term;
-	expr =* expr, "+", term, "*", factor;
+    expr =  expr, "+", term;
+    expr =* expr, "+", term, "*", factor;
 
 Now, we may conclude, e.g., that "+" > "+", given that
 
-		expr = expr, "+", term;
-	and	"+" is a Rightmost Terminal Character of expr's Derivatives
+        expr = expr, "+", term;
+    and    "+" is a Rightmost Terminal Character of expr's Derivatives
 
 In fact, we find that at most one precedence relation holds of any two terminals
 in our case. As such, we can exhaustively describe all precedence relations
 using an n x n matrix for n the number of terminals:
 
-		(	ID	*	+	)
-	   --------------------------------------
-	)  |			>	>	>
-	ID |			>	>	>
-	*  |	<	<	>	>	>
-	+  |	<	<	<	>	>
-	(  |	<	<	<	<	=
+          (    ID   *    +    )
+       ------------------------
+    )  |  >    >    >
+    ID |  >    >    >
+    *  |  <    <    >    >    >
+    +  |  <    <    <    >    >
+    (  |  <    <    <    <    =
 
 Operator grammars satisfying the above property are designated precedence
 grammars. We shall focus exclusively on them below, with matrices such as above
@@ -125,31 +125,31 @@ tive to "b", x, "c" iff "b" < "a_1", "a_i" = "a_(i+1)" for 1 <= i <= n-1 and
 "a_n" > "c" While generalizable to the absence of either "b" or "c", we may w/h
 loss of generality assume a fresh start symbol s' and terminals "|-", "-|" s.t.
 
-	s' = "|-", s, "-|";
+    s' = "|-", s, "-|";
 
 for s the old start symbol. Given a proposed sentential form "|-", x, "-|", we
 build a skeletal derivation bottom-up by iteratively replacing a prime phrase
 with a fresh non-terminal character u_i (for i = 1, 2, ...). E.g.,
 
-		"|-", "(", "ID", "+", "ID", ")", "*", "ID", "-|"
-	=*	"|-", "(",  u_1, "+", "ID", ")", "*", "ID', "-|"
-	=*	"|-", "(",  u_1, "+",  u_2, ")", "*", "ID", "-|"
-	=*	"|-", "(",             u_3, ")", "*", "ID", "-|"
-	=*	"|-",                       u_4, "*", "ID", "-|"
-	=*	"|-",                       u_4, "*",  u_5, "-|"
-	=*      "|-",                                  u_6, "-|";
+        "|-", "(", "ID", "+", "ID", ")", "*", "ID", "-|"
+    =*  "|-", "(",  u_1, "+", "ID", ")", "*", "ID', "-|"
+    =*  "|-", "(",  u_1, "+",  u_2, ")", "*", "ID", "-|"
+    =*  "|-", "(",             u_3, ")", "*", "ID", "-|"
+    =*  "|-",                       u_4, "*", "ID", "-|"
+    =*  "|-",                       u_4, "*",  u_5, "-|"
+    =*  "|-",                                  u_6, "-|";
 
 The problem of determining whether the original string was a sentential form is
 now reduced to solving for u_1, ..., u_6,
 
-	u_1 =* "ID";	u_3 =* u_1, "+", u_2;	u_5 =* "ID";
-	u_2 =* "ID";	u_4 =* "(", u_3, ")";	u_6 =* u_4, "*", u_5;
+    u_1 =* "ID";    u_3 =* u_1, "+", u_2;   u_5 =* "ID";
+    u_2 =* "ID";    u_4 =* "(", u_3, ")";   u_6 =* u_4, "*", u_5;
 
 s.t. expr =* u_6;. We have the following solution, based on the productions
 expr = term, term = factor and factor = ID:
 
-	u_1 := expr	u_3 := expr	u_5 := factor
-	u_2 := term	u_4 := term	u_6 := term
+    u_1 := expr    u_3 := expr    u_5 := factor
+    u_2 := term    u_4 := term    u_6 := term
 
 It can be shown that precedence grammars are non-ambiguous, and that always
 restricting to the reduction of the leftmost prime phrase suffices for deciding
@@ -159,23 +159,23 @@ We now discuss several improvements. First, note a precedence matrix takes space
 quadratic in the number of terminals. In most cases, we can compute precedence
 functions f and g mapping terminals to numbers s.t.
 
-	"a" < "b"	implies	f("a") < g("b")
-	"a" = "b"	implies	f("a") = g("b")
-	"a" > "b"	implies f("a") > g("b")
+    "a" < "b"    implies    f("a") < g("b")
+    "a" = "b"    implies    f("a") = g("b")
+    "a" > "b"    implies    f("a") > g("b")
 
 offering a linear alternative to the precedence matrix. E.g.,
 
-		")"	"ID"	"*"	"-"	")"
-	-------------------------------------------
-	f	 5	 5	 5	 3	 1
-	g	 1	 6	 4	 2	 6
+        ")"    "ID"     "*"     "-"     ")"
+    -------------------------------------------
+    f     5     5       5       3       1
+    g     1     6       4       2       6
 
 Next, consider the extension of our previous grammar with unary addition:
 
-	expr	= term    | expr, "+", term;
-	term    = factor  | term, "*", factor;
-	factor  = primary | "+", factor;
-	primary = "ID"    | "(", expr, ")";
+    expr    = term    | expr, "+", term;
+    term    = factor  | term, "*", factor;
+    factor  = primary | "+", factor;
+    primary = "ID"    | "(", expr, ")";
 
 Since now both "*" > "+" and "*" < "+", this is no longer a precedence grammar.
 However, the latter property is restored if we represent binary and unary "+"
