@@ -1,0 +1,71 @@
+Robert Sedgewick and Kevin Wayne: Algorithms, 4th edition.
+Section 3.1, Symbol Tables
+
+Summarized by Arno Bastenhof.
+
+This chapter addresses the problem of searching for a piece of information in a
+dataset, with the first section aiming to find a suitable abstraction in the
+form of an ADT and its API.
+
+The familiar concept of an array is taken as a starting point, it already
+exhibiting some of the required functionality, though not yet in their desired
+generality. Specifically, array entries are initialized by pairing their indices
+with the values that they are to store, while allowing for values to later be
+searched and retrieved by naming the corresponding index. In a typical client
+application, however, we may wish to recall values by other means than through
+consecutive integers. For instance, consider the problem of counting the
+frequencies of words encountered in an input stream. In this case, the values we
+intend to store are integers, while the related 'indexes' are to be words (a
+situation opposite to how arrays are frequently used).  
+
+We define an ADT by the name of a symbol table (also known as a dictionary),
+intended to remedy the shortcomings of arrays as a suitable interface for
+coincisely specifying search problems. The rigid notion of an array index is
+replaced with the more general concept of a key, allowed to be of arbitrary
+type. To preserve the desirable traits of the semantics of arrays, however, a
+symbol table does at minimum presuppose an equivalence relation for its keys,
+needed for their retrieval. For example, when keys are of reference type, we
+would not want to allow lookup only through the specification of a memory
+address. Although technically such would satisfy the requirements of an
+equivalence relation, the latter is a more general concept that is usually more
+sensibly implemented based on the state of the object pointed to. For example,
+continuing our previous example, if words are used as keys when keeping track of
+their frequencies, then a suitable notion of equivalence for their
+implementation as character arrays would be based on the actual contents
+thereof. It follows that the keys in a symbol table are not to be mutated.
+
+To summarize, we have conceived of a symbol table as an ADT that supports the
+insertion of key-value pairs, as well as lookup of values by their key. As with
+array indices, we shall require keys to be unique, and interpret insertion of a
+value for a key that's already present in the table to result in the replacement
+of the value previously stored therewith. (Together, these two properties are
+referred to by the 'associative array abstraction'.) We shall furthermore
+prohibit NULL keys, while reserving NULL values to signal absence of a key.
+Besides these fundamental operations, we may in practical applications desire
+the removal of a key-value pair. When implemented lazily, we simply NULL out the
+value, in accordance with the semantics of NULL values spelt out above. Note
+again the similarity to arrays when used to back collections, necessitating a
+similar strategy when implementing removal operations to prevent loitering.
+Alternatively, we may choose to implement removal eagerly, deleting both the key
+and value references immediately.
+
+In the above discussion, our only requirement of keys was that they came with an
+equivalence relation. If, however, we may assume a total ordering, several other
+useful operations become feasible, and we refer to the resulting ADT as an
+ordered symbol table.
+
+* To start with, we may wish to expose the maximum and minimum keys stored in a
+table. Combined with the delete operation, this makes an ordered symbol table
+almost an extension of priority queues, save for the fact that the latter allow
+multiple entries for the same key.
+
+* Floor- and ceiling operations return, respectively, the greatest (least) key
+in the table smaller (greater) or equal to some given key.
+
+* Given a client-supplied key, we may return its *rank* (i.e., the number of
+smaller keys found in the table), while conversely we may *select* the key
+from the table for any given rank.
+
+* We may return the (number of) keys that fall within some given range, as
+specified by two delimiting client-supplied keys.
+
