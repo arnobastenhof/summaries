@@ -18,8 +18,8 @@ remove the smallest key before inserting the next item read from input. Calling
 remove k times then returns the desired items in ascending order.
 
 To support an efficient implementation, we shall represent a priority queue
-using a tree-based representation. Given, then, any tree, we shall say that it
-is heap ordered iff each node's key is no smaller than any of those found in its
+using a tree-based structure. Given, then, any tree, we shall say that it is
+heap ordered iff each node's key is no smaller than any of those found in its
 children. Put another way, any branch from the root node down to one of the
 leafs shows a descending key sequence. In particular, if used for representing
 priority queues, we can be sure that the next item for removal is found at the
@@ -30,7 +30,7 @@ smallest key instead.)
 Whatever their exact implementation, if operating on a tree-based data
 structure, insertion and removal in a priority queue will have to change the
 tree in one way or another. In the general situation, modifying the contents of
-any of a tree's nodes need not preserve a heap ordering. Specifically, the 
+any of a tree's nodes need not preserve its heap ordering. Specifically, the 
 latter may be violated in one of two ways: the newly inserted key may be (1)
 strictly smaller than at least one among those of the child nodes; or (2)
 strictly larger than that of the parent node. To recover, we can proceed by the
@@ -46,13 +46,13 @@ that of its parent.
 Said procedures will form the basis of the implementations for insertion and
 removal discussed below. However, the unrestricted tree shapes used in the
 preceding discussion are neither necesseray for these specific operations, nor
-are they desired if we desire to attain efficiency.
+are they desired if we seek to attain efficiency.
 
 The first restricton that we consider is that of an upper bound on the number
 of child nodes for any given parent. There's a tradeoff to be made here: a
 higher number implies a lower minimum depth of the tree for it to be able to
 contain all items, whereas a lower number requires fewer comparisons to
-determine which of a node's children contains the highest key when implementing
+determine which of a node's children contains the largest key when implementing
 'sink'. We shall here address the latter concern, sticking to binary trees.
 
 The occupation over a lower bound on the minimum depth of a tree is of little
@@ -66,15 +66,14 @@ Complete heap-ordered binary(-branching) trees are also referred to by (binary)
 heaps. Using one, we implement the operations of a priority queue as follows:
 
 (1) An item is inserted by storing it in a new node added at the end, and then
-made to 'swim' up to restore the heap ordering. (Compare this to the inner loop
-of an insertion sort.)
+made to 'swim' up to restore heap order (cf. the inner loop of insertion sort).
 
-(2) Items are removed from the root by replacing it with the contents of the
+(2) An item is removed from the root by replacing it with the contents of the
 last node (deleted afterwards), subsequently made to 'sink' down to its proper
 position.
 
 Note that, since (2) takes a node from the end and re-inserts it at the root,
-it is likely to sink down again all the way to the bottom. As such, we can
+it is likely to sink down again all the way down to the bottom. As such, we can
 optimize by skipping any comparisons needed along the way to check if it is
 already in position, instead making it swim up again from the bottom if needed.
 
@@ -90,13 +89,13 @@ the last has pow(2, k) nodes. In particular, the total number of nodes in the
 first k levels (or an upper bound thereon, if k is the last level) is given by
 the geometric sum
 
-	sum = 0;
-	for (i = 1; i <= k; i++)
-		sum += pow(2, k);
+    sum = 0;
+    for (i = 1; i <= k; i++)
+        sum += pow(2, k);
 
 By a simple inductive argument on k, it can be shown that
 
-	sum == pow(2, k + 1) - 1
+    sum == pow(2, k + 1) - 1
 
 Hence, the first node in the next level is the pow(2, k + 1)'th seen since the
 root if we proceed breath-first. More specifically, if we number each node by
@@ -109,19 +108,19 @@ by induction on h. The other way around, given an (non-root) node n, then the
 integer division n / 2 locates its parent. To summarize, we can sequentially
 represent a complete binary tree by choosing array indices according to the
 above numbering scheme, using simple integer arithmetic to retrieve the children
-and parent for any given node. Note, however, that, if combinated with dynamic
+and parent for any given node. Note, however, that, if combined with dynamic
 array resizing, then the the logarithmic costs claimed above for insertion and
 removal are amortized.
 
 A priority queue can be used for sorting an array by first inserting all the
 latter's items, and then removing them again one by one. We can use this
-observation as the basis for an in-place linearithmic worst-case sorting
+observation as the basis for an in-place linearithmic (worst-case) sorting
 algorithm known as heap sort. Specifically, start by making the array (of some
 size N) into a heap by directly calling sink on the first N / 2 items (noting
 the second half to consist entirely of leafs). Next, during a stage known as
-sortdown, repeatedly 'remove' the item at the root node, keeping a pointer at
+sortdown, repeatedly 'remove' the item at the root node, keeping a pointer to
 the array element that forms the last node of the remaining heap, decrementing
 it at each step. While the resulting algorithm has better worst-case behaviour
 than quicksort, it performs worse on average, and on modern machines typically
-results in a high rate of chache misses. Furthermore, while compared to merge
+results in a high rate of cache misses. Furthermore, while compared to merge
 sort it uses only a constant amount of space, it is however unstable.
