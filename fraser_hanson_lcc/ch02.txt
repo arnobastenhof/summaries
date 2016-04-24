@@ -39,7 +39,7 @@ last allocable bytes resp. Headers furthermore combine blocks into linked lists:
     union header {          struct block {
         struct block    b;      struct block    *next;
         union align     a;      char            *limit;
-    }					        char            *avail;
+    }                           char            *avail;
                             }
 
 Finally, when an allocation request comes in for some size n that requires the
