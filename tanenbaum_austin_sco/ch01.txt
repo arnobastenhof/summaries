@@ -1,0 +1,60 @@
+Andrew S. Tanenbaum and Todd Austin: Structured Computer Organization (6th ed.)
+Chapter 1, Introduction.
+
+Summarized by Arno Bastenhof
+
+I.1 Computers are organized by a sequence of abstractions to bridge the
+conceptual gap between user-defined tasks and the actual machine language, down
+to its implementation in electronic circuits.
+
+I.2 Each abstraction layer may be conceptualized as a (virtual) machine Mn with
+an associated instruction set Ln, running on top of a lower level 0 <= m < n
+by either translation or interpretation. The operations and data structures
+exposed at a given level to its users are collectively referred to as its
+architecture or organization.
+
+I.3 A typical multilevel computer starts with the digital logic at level 0,
+based on gates as the smallest conceptual unit. As the computer's hardware it
+realizes the system's microarchitecture at level 1, consisting, roughly, of the
+machine's processing unit and memory, as well as their communication channel. 
+The Instruction Set Architecture (ISA) at level 2 is typically referred to as
+the machine language, being interpreted by a microprogram running on a smaller
+instruction set at level 1, or executed directly by the hardware at level 0. The
+ISA is augmented by the Operating System at level 3 with additional instructions
+(known as system calls), being interpreted at level 2. The levels thus far are
+designed by systems programmers and represent their data and instructions in
+binary. In contrast, the Assembly language of level 4 renders them accessible in
+symbolic form to applications programmers, being translated to binary by an
+assembler. Finally, at level 5 are found the higher-level problem oriented
+languages, typically translated to assembly by a compiler.
+
+I.4 No sharp border can be drawn between any two levels of a computer's
+organization to separate hardware from software. Despite their differences in
+subject matter, dealing resp. with electronics and with algorithms and data
+structures, they may in practice be considered logically equivalent on the
+premise that either may realize the functionality of the other, as particularly
+well exemplified by the concept of a microprogram.
+
+I.5 Computers have evolved through several generations, starting with Babbage's
+mechanical Analytical Engine. The use of vacuum tubes saw the invention of the
+ENIAC and IAS, with the latter originating the von Neumann design. Transistors
+provided the next breakthrough, giving birth to the PDP-1 as the world's first
+minicomputer. The invention of sillicon integrated circuits heralded the 
+generation of IBM's System/360 and DEC's PDP-11, having made it possible for
+dozens of transistors to be integrated on a single chip. As these numbers 
+exploded under the pace of technological progress, minicomputers for the first
+time became available to the individual consumer, starting the personal
+computing era with the Apple II and the IBM PC. Though still ongoing, arguably
+the latest generation is that of the low-power computers shrank to an almost
+invisible size, embedded into nearly every man-made appliance, ranging from our
+bank cards to our smart phones.
+
+I.6 A typology of the computers currently available may be based largely on
+their size, starting with the disposable kind exemplified by RFID chips. Next
+are microcontrollers, being embedded in devices that are themselves not
+marketed as computers. Mobile- and game computers constitute the next step
+up, being followed by the more general-purpose personal computers. The latter's
+high-end models are typically used as network servers, with clusters thereof
+typically housed in data centers. Finally, mainframes have outgrown their legacy
+origins to find new use as powerful servers specialized for processing large
+volumes of data.
