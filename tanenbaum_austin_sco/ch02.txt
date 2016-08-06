@@ -1,0 +1,159 @@
+Andrew S. Tanenbaum and Todd Austin: Structured Computer Organization (6th ed.)
+Chapter 2, Computer Systems Organization
+
+Summarized by Arno Bastenhof
+
+II.1 Computers are built from Central Processing Units (CPU's, or simply
+processors), memories and I/O devices. The CPU, in turn, is composed of a
+Control Unit (fetching and decoding instructions), an Arithmetic Logical Unit
+(the ALU, handling the execution) and a small memory consisting of registers,
+some general-purpose and some used for storing control information, and among
+which are generally found the Program Counter (PC), pointing to the next
+instruction, and the Instruction Register (IR), pointing to the current one.
+I/O devices, in turn, come coupled with a controller, handling their interfacing
+with the software. Finally, buses connect the components both internal and
+external to the CPU, enabling the flow of address, data and control signals
+therebetween. When competing for bus access, I/O devices typically trump the
+CPU, causing it to stall in a process known as cycle stealing.
+
+II.2 The physical arrangement of a computer's components is mediated by a
+printed circuit board called the motherboard, housing the CPU, the bus, memory
+slots, integrated controllers, and sockets for plugging controllers distributed
+on a separate board into the bus. Connectors in the back of the caging allow for
+the attachment of I/O devices, being wired to the corresponding controllers.
+
+II.3 Controllers may require memory access, as needed, e.g., for writing the
+output received from their associated device after having issued some command
+thereon. If the CPU is circumvented, such Memory Access is called Direct, with
+the controller said to provide DMA. After writing its output to memory, a
+controller signals an interrupt, causing the CPU to suspend its operation and
+run an interrupt handler.
+
+II.5 Instructions typically are of the type register-memory, moving data between
+the CPU and memory, or register-register. The latter use the CPU's data path,
+consisting of internal buses connecting its registers to the ALU and back,
+passing through specialized input registers for storing the ALU's operands and
+an output register holding its result. The data path's operation is referred to
+by the data cycle, and to a large extent influences a machine's speed.
+
+II.6 As performance considerations drove the growth of instructions in both
+number and complexity after the earliest computer designs, so did the cost of
+their hardware implementation. Software interpretation offered a cost-effective
+and quick-to-market alternative, giving birth to the microarchitecture level.
+Though initially utilized to support a single architecture shared among both
+low- and high-end models of the IBM System/360, the increased consumer demand
+for low-cost machines quickly made it the de facto design standard in the 1970's
+for all but the most high-performance (super)computers.
+
+II.7 The popularity of software interpretation proved a stimulus to even further
+investigation into increasingly complex instructions, now aimed at bridging the
+semantic gap with high-level languages. The RISC design (for Reduced Instruction
+Set Computer) born in the 1980's represented a countermovement, dispensing
+interpretation altogether for an initial focus on a small number of instructions
+that could execute in a single data path cycle, and which, as was soon found to
+be more important, could be issued more quickly, and hence execute in parallel
+in larger quantities per second. Though outperforming their 'CISC' (Complex ...)
+counterparts, the latter were quick to adapt, with Intel incorporating a hybrid
+approach in their 80486 processor.
+
+II.8 Bar new technological developments and considerations of backwards-
+compatibility, lessons learned from the past decades have been distilled in a
+number of RISC design principles for the development of modern general-purpose
+CPU's. First, eliminate interpretation for all but the less frequently occurring
+complex instructions, and minimize the time taken for issuing them (e.g., by
+making them easy to decode). In addition, since memory access is expensive,
+restrict it to only LOAD and STORE instructions, and provide plenty of registers
+to reduce the need for them.
+
+II.9 Besides improving its clock speed, a CPU's performance may be increased
+through parallelism at either the instruction- or the processor level. Whereas
+the former may achieve performance improvements up to a factor of 10, the latter
+may potentially reach into the 3 digits.
+
+II.10 Pipelining achieves parallelism at the level of instructions by dividing
+their execution into some fixed n concurrent stages, each ideally taking one
+clock cycle to complete. The choice of n and its relation to the cycle time T
+introduces a tradeoff between the CPU's latency (the time nT taken to execute
+a single instruction) and its bandwith (the total number of instructions
+executed per second; one for each clock cycle). A simple 5-stage pipeline might
+consist of (pre-)fetching the instruction, decoding it, fetching its operands,
+running them through the data path and writing back the result to a register. To
+achieve the execution of multiple instructions within a clock cycle, a pipeline
+is typically combined with a superscalar architecture, issuing instructions for
+simultaneous execution by separate functional units (e.g., ALU's, LOAD/STORE, or
+a Floating Point Unit) while resolving any data dependencies at runtime.
+
+II.11 Processor-level parallelism may be achieved by employing multiple tightly
+coupled CPU's, in the sense of all sharing a single memory, leaving it to the
+software to guard against race conditions and deadlocks. As the number of CPU's
+in such multiprocessors increases, however, so does the difficulty of connecting
+them to a shared memory. Multicomputers work around this problem by promoting
+loose coupling, eliminating the single memory in favour of private memories and
+message passing. Finally, for code relying heavily on arrays and loops, as
+typically found in scientific computing and graphics, data parallel computers
+offer yet another, cost-effective alternative. By having many processors operate
+on different parts of the input data through concurrent execution of the same
+instructions, the latter can be fetched, decoded and issued by a single, shared
+control unit, saving greatly on sillicon. SIMD processing (Single Instruction-
+stream Multiple Data-stream), as typically found in GPU's, realizes this design
+by replicating the functional units. In contrast, a vector processor achieves
+largely the same effect by pipelining its functional units instead, composing
+their in- and output registers from 'vectors' of primitive registers.
+
+II.12 The memory stores programs and their data, based on the binary digit, or
+simply bit, as the smallest unit of information. Bits further group into cells
+or locations, typically by the 8 and called a byte, being, in turn, the memory's
+smallest addressable unit. In particular, an address is itself a binary number
+composed of some fixed number of bits, constraining the total size of
+addressable memory. Cells, finally, group into words (typically by a power of
+2), constituting the typical size of the instruction's operands and determining
+the register size. Words may be represented in memory either by storing its
+bytes in Big Endian order, proceeding from most to least significant  (i.e., in
+decreasing order of weight), or in the reverse Little Endian order.
+
+II.13 Due to considerations of cost, the memory's speed is in practice inversely
+proportionate to its size. To prevent a large memory from becoming a performance
+bottleneck wasting many CPU cycles, a cost-effective solution is to install a
+smaller 'cache' memory en-route to the CPU. The success of this method hinges on
+the locality principle, recording the empirically observed correlation between
+the time duration separating two memory references and the vicinity of the
+corresponding locations in memory. Thus, any load from the latter will also pull
+surrounding bytes into one of the fixed-size blocks making up the logical
+division of the cache, and referred to by its cache lines. While traditionally
+unified caches were used for storing instructions and data together, the advent
+of pipelining has instead promoted their separate storage in a split cache.
+
+II.14 Memory chips, often of around 256MB each, are typically grouped by the 8
+or 16 on a printed circuit board, usually 4 of which may be installed on the
+motherboard. Depending on which sides the connectors appear on, such units are
+referred to by either SIMM (Single Inline Memory Module), though now obsolete,
+or DIMM (Dual Inline Memory Module), having replaced it. Yet a third type is
+known by the more compact  SO-DIMM (Small Outline DIMM), used in notebooks.
+
+II.15 the inverse proportionate relation of memorize size to its speed gives
+rise to a memory hierarchy, with the CPU registers, cache and main memory
+appearing in the top portion as the computer's volatile primary memory. Below
+them are found the secondary non-volatile memory devices, with magnetic and
+solid state disks used for permanent storage, and with tapes and optical discs
+(e.g., CD's, DVD's, Bluray) inhabiting the bottom layer for archival storage.
+
+II.16 Disks being I/O devices, they have associated controller chips. Though
+initially appearing on a separate board, they were later paired with the disk
+in IDE drives (Integrated Drive Electronics), over time superseded by the
+ATA (AT Attachment) standards, with each incarnation upping the maximum bit
+transfer rate and/or storage capacity, to current theoretical limits of
+1.5GB/sec and up to 128PB of storage.
+
+II.17 SCSI disks offer an alternative to the line of IDE descendants, differing
+in their interface and boasting a higher bit transfer rate. As a standard, SCSI
+(Small Computer System Interface) encompasses both a bus and peripheral devices
+of which up to 7 may be attached thereto, among which appear SCSI controllers
+and -disks, as well as, e.g., CD-ROMs, tapes, etc. 
+
+II.18 RAID (Redundant Array of Independent Disks) is a technology for connecting
+multiple disks to one controller that presents them as a unit to the operating
+system, thus enabling parallel I/O without requiring different software.
+Characteristic of a RAID is its distributed storage of data, for which six such
+schemes have been proposed, referred to by levels 0 through 5. In practice, a
+RAID is typically realized using an SCSI controller and -disks, benefiting from
+the former's capacity of connecting up to 7 peripherals.
