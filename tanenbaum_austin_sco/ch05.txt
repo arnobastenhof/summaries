@@ -1,0 +1,114 @@
+Andrew S. Tanenbaum and Todd Austin: Structured Computer Organization (6th ed.)
+Chapter 5, The Instruction Set Architecture Level
+
+Summarized by Arno Bastenhof
+
+V.1 The ISA acts as a common intermediate form for higher-level problem oriented
+languages, constituting their interface with the hardware. The system architect
+designing it is often faced with consumer demand for backward compatibility,
+restricting his options to whichever extensions satisfy the needs of both the
+compiler writers and of the hardware engineers for generations to come.
+
+V.2 An ISA is formally defined by its memory model, registers, data types and
+instructions, sometimes documented in a specification to enable any manufacturer
+to implement it. In practice, however, implementation details of the chosen
+microarchitecture may still leak through, particularly involving parallelism and
+optimizations that require compiler support. In addition, ISA's typically
+distinguish kernel- and user modes, ommitting from the latter those registers
+and instructions that are available only to the OS.
+
+V.3 An ISA's memory model stipulates word alignment, the number of address
+spaces in use and the semantics of LOADs and STOREs. Alignment concerns whether
+word addresses must also be a multiple of the word size. While preferred for
+efficiency, the ability to start words at any cell may be required for backward
+compatibility, despite many physical memories these days disallowing non-aligned
+accesses. The next issue pertains to the possible separation of instructions and
+data in distinct address spaces. Though not widely adopted, doing so doubles the
+number of addressable cells and has the security benefit of making it possible
+to prohibit write access to the instruction space. Finally, the reliance of
+contemporary microarchitectures on parallelism has raised the question if the
+burden of serializing memory access should be placed with the hardware, hurting
+performance, or if instead explicit synchronization instructions should be made
+available to have the compiler do the work, leaking abstraction.
+
+V.4 The ISA's registers are a subset of those at the microarchitecture level,
+with some labeled as special-purpose, often controlling program execution, while
+the remainder functions as a general-purpose scratchpad for minimizing memory
+access. Moreover, not all registers are visible in user mode, with some only
+being available to the OS. The PSW- (Program Status Word), or flags register
+constitutes a special case in this regard, each whose bits act as a flag
+detailing some aspect of the CPU's operation. Some are writable in user mode,
+like condition bits used for comparisons and conditional branching (detailing,
+e.g., whether the ALU's output was Negative, Zero, had even Parity or caused an
+oVerflow, etc.), whle others, like the machine mode, are read-only therein.
+
+V.5 Hardware support for data types at the ISA level translates to particular
+instructions expecting their operands in a certain format, often carried through
+to a logical division of the general-purpose registers according to the operand
+types they should be used with. Common numeric types are signed and unsigned
+integers and floating point numbers of varying sizes, and binary-coded decimals.
+In addition, support for nonnumeric types includes booleans and pointers, and
+sometimes character strings as well.
+
+V.6 Insructions consist of an opcode and zero or more address fields specifying
+their operands, typically up to three. A major design concern is to limit their
+size. Though harder to decode or overlap, shorter instructions take up less
+space and take better advantage of the available memory bandwith, having over
+decades increasingly fallen behind improvements in processor speed. An immediate
+consequence is a trade-off in how the available bits are divided over opcodes
+and address fields. With regard to the former, past experiences teach to always
+leave room for future expansions of the number of operations. As for addresses,
+the choice is one between spending the bits on a finer resolution, counting,
+e.g., bytes instead of words, or on a larger memory. One way of resolving the
+trade-off is through variable-size or expanding opcodes, by which unused address
+fields of instructions with fewer operands are employed to express a larger
+number of operations.
+
+V.7 Various methods exist for relating address fields to their corresponding
+operands, being collectively referred to by address modes. In case of immediate
+addressing, data consisting of small integral values are hardcoded directly in
+the instruction. Next, direct addressing uses absolute memory addresses, which
+hense must already be known at compile time (as with, e.g., global variables).
+Register addressing does the same for referencing the contents of registers,
+often coinciding with frequently used variables. Register indirect addressing,
+in turn, is used for accessing memory locations indirectly using a pointer held
+in a register, as may be useful for multiway branches. Moving on, indexed
+addressing computes an address from a base and an offset, either of which may be
+an instruction operand or be held in a register. Several variations exist that
+fix the base, like, e.g., PC-relative addressing. Finally, stack addressing
+largely removes the need for address fields altogether in favour of an operand
+stack, thus facilitating the further reduction of instruction length. Normally,
+not all addressing modes tend to be supported in any given architecture, with
+various possible choices of proper subsets thereof already proving sufficient
+(like, e.g., the immediate, direct, register and indexing modes).
+
+V.8 Instructions tend to fall in one of six categories, with some outliers as a
+result of, e.g., backward compatibility constraints. First, data movement
+instructions copy the contents of one location to another, either of which may
+be a register or a memory cell. A popular choice, for instance, is to have LOAD
+and STORE instructions for moving data back and forth between the registers and
+memory as well as a MOVE instruction using only registers, while ommitting any
+direct means of exchanging information between two memory locations. Dyadic and
+monadic instructions, in turn, perform the usual unary and binary arithmetic and
+logical operations (including shifts), using either general-purpose registers or
+an operand stack for reading and writing their in- and outputs. Next are
+instructions that conditionally branch based on either: the value of one of the
+machine's condition bits, as may be kept track of, for instance, in PSW; whether
+a given word equals zero; or, finally, the result of comparing two given data
+items. The third method is sometimes reduced to one of the former two by
+combining them with separate comparison instructions that output their result in
+either one or more condition bits or on the operand stack. Finally, we have
+procedure call- (and return-) and I/O instructions, with the latter varying
+widely among different ISA's.
+
+V.9 Control flow by default follows the sequence of instructions in the object
+program, but may be altered by branchings, procedure calls or -returns,
+coroutine resumption, traps and interrupts. Traps are function calls triggered
+synchronously at the microarchitecture level upon detection of certain
+exceptional conditions, like an overflow. In contrast, interrupts are signalled
+asynchronously and often concurrently by I/O devices, necessitating a means to
+distinghuish their priorities (e.g., mediating them through an interrupt
+controller that acts as an arbiter) while guaranteeing their individual
+transparancy (i.e., ensuring the interrupted process, possibly itself an
+interrupt handler, continues execution in the same state as it had before
+the interrupt occurred).
