@@ -1,0 +1,154 @@
+Andrew S. Tanenbaum and Todd Austin: Structured Computer Organization (6th ed.)
+Chapter 3, The digital logic level.
+
+Summarized by Arno Bastenhof
+
+III.1 A digital circuit restricts its signals to logical values 0 and 1, being
+composed of the electronic equivalents for a small number of Boolean functions,
+called gates. Specifically, the primitive such restrict to NAND-, NOR- and NOT
+gates (also referred to by inverters), noting the former two are both logically
+complete by themselves. The close correspondence with Boolean algebra allows for
+the analysis and simplification of digital circuits through use of various of
+the former's laws, like De Morgan's, distributivity, idempotence, etc.
+
+III.2 The digital logic level is itself an abstraction over the device level,
+detailing the construction of gates from transistors. In particular, NAND and
+NOR use two, compared to the extra transistor required for their composition
+with NOT to derive AND and OR. Among the manufactoring technologies for gates,
+MOS (Metal Oxide Semiconductor) dominates the computer market, sacrificing speed
+in its end product for a lower power consumption and a smaller size.
+
+III.3 Gates are combined into larger functions on rectangular-sized Integrated
+Circuits (ICs), or simply chips, handling their I/O through pins connecting to
+the in- or outputs of its gates, power or ground. Common types of ICs include
+Dual Inline Packages (DIPs), featuring two rows of pins and used, e.g., for
+microcontrollers, as well as the larger square-sized Pin Grid Arrays (PGAs) and
+Land Grid Arrays (LGAs), populating their bottom sides with, resp., pins and
+smaller flat pads.
+
+III.4 A combinational circuit is one whose outputs are a function of its inputs.
+For example, a multiplexer has, for some fixed n, 2^n data inputs and a single
+output, selected from among the former using n control inputs encoding an
+n-digit binary number. A typical use is for converting information coming in in
+parallel on its data inputs to a series of output bits by counting up with the
+control inputs. In addition, a multiplexer can implement any truth table of n
+variables by matching the latter's 2^n rows (assumed to be sorted in ascending
+numeric order) with its data inputs and connecting these to power (1) or ground
+(0) accordingly. Other examples of combinational circuits are decoders, using n
+inputs for powering one of 2^n outputs, and comparators, wiring n XOR gates in
+parallel to a NOR gate for a bitwise comparison of two n-bit input words.
+
+III.5 A half-adder is an arithmetic circuit that feeds two input bits to both an
+XOR- and an AND gate for outputting their sum, resp. carry out. The extension to
+multibit words, however, requires an extra carry in signal for all but the lower
+order bits. A full adder wires two half adders in sequence for computing the sum
+of the input bits with the carry in, relaying their individual carry outs to an
+OR gate. By connecting the carry out of one full adder to another's carry in, a
+ripple carry adder may be built for performing addition on multibit words.
+
+III.6 A bit slice feeds two input bits in parallel to a full adder and a logical
+unit, simultaneously performing a disjunction, conjunction and negation. The
+resulting four outputs are combined in AND gates with those of a 2-bit decoder
+and subsequently fed to an OR gate in order to select the circuit's output. By
+wiring multiple bit slices in series, an Arithmetic Logical Unit (ALU) results.
+
+III.7 A clock is a digital circuit that generates a pulse by periodically
+inverting its output signal. Its use is for synchronizing events, triggering
+them either by the rising or falling edges of its pulse, corresponding to the
+instants at which the clock signal inverts from low to high, resp. the other way
+around, or by whether the pulse resides in a low or high level, coinciding with
+the time durations in which the clock signal takes on a particular value. The
+time interval between every other inversion is referred to as the clock cycle
+time. Typically, however, events co-occur inside a single clock cycle, and their
+coordination is handled by phase-shifting the 'primary' clock signal in one or
+more secondary lines that branch off it and insert delays.
+
+III.8 An SR (Set-Reset) Latch is a non-combinational circuit with two inputs,
+arbitrarily designated Set and Reset. Two opposite output signals furthermore
+remember the last known (possibly current) state where the inputs were likewise
+inverses, so long as neither is powered is powered simulatenously. To handle the
+latter illegal state, we proceed in two steps. First, a Clocked SR Latch enables
+Set and Reset through a third input signal CK, typically driven by a clock that
+triggers them on high level pulses. As a consequence, only complementary values
+for Set and Reset remain of interest, as the situation where both are off is
+also covered by a 0 clock signal. This observation paves the way for replacing
+them with a single Data signal and an inverter, with the resulting circuit
+called a Clocked D Latch.
+
+III.9 By feeding a clock's output together with its complement to an AND gate,
+the invertor's propagation delay causes the resulting circuit to spike on each
+rising edge of the clock signal. Combined with a clocked D Latch, the result is
+a(n rising) edge triggered Flip-Flop. By wiring several together, both multibit
+registers as well as larger memories may be created. In the latter case, bits
+group into n-sized cells that may be individually addressed by the input lines
+to a decoder and which share the same n Data In- and Output lines.
+
+III.10 A RAM (Random Access Memory) is a volatile memory used for a computer's
+main- and cache memories. When built from Flip-Flops, the result is a Static
+RAM (SRAM), characterized by its fast access time, which makes it particularly
+suitable as a cache. In contrast, a DRAM (Dynamic RAM) exchanges speed for a
+higher chip density than may be obtained using Flip-Flops, making it popular
+for use in main memory. The DRAM's latest incarnation, named DDR3 (Double Data
+Rate), is triggered by both the rising and falling edges of the clock signal.
+
+III.11 ROMs offer a non-volatile Read-Only alternative to RAMs and were
+originally programmed once during manufacturing time. Subsequent incarnations
+were instead field-Programmable (PROMs) and later yet also -Erasable (EPROMs) to
+enable reusability during the design phase, with the more recent flash memory
+even being rewritable, similar to RAMs.
+
+III.12 The CPU, Memory and I/O devices communicate through parallel wirings of
+their pins, called (external) buses (to differentiate them from those internal
+to the CPU). Each pin has its function, described by the component's logical
+pinout, with only pins of the same function being allowed to connect. Functions
+may concern address, data or control signals, with the amount of pins found in
+the former two categories determining the total number of addressable memory
+cells and, resp., the maximum size of a word that may be read or written in a
+single transaction. Control pins, in turn, may serve bus control, conveying the
+CPU's intentions to the memory and I/O devices (e.g., perform a read- or write
+operation); interrupts, drawing the CPU's attention to the completion of a task
+it previously issued to an I/O device; bus arbitration, regulating bus access;
+and coprocessor signalling, handling exchanges between the CPU and coprocessors
+like a GPU; among other uses. The logical pinout also details for each pin which
+of the logical signals is used for applying its intended function. In general,
+a signal, pin or line is said to be asserted if it takes on the value associated
+with its function, and to be negated otherwise.
+
+III.13 In every bus transfer between two components, one, the initiator, acts
+as the Master, while the other, being targeted, acts as Slave. Only one device
+may assume the position of Master at a time, possibly resulting in conflicts. 
+Earlier computers featuring a single system bus typically granted I/O devices
+priority over the CPU in such situations, causing the latter to stall in a
+process known as cycle stealing. Later architectures used a dedicated high-speed
+memory bus between the CPU and its cache- and main memories, separating it via
+a bridge chip from one or more I/O buses for connecting the peripherals.
+
+III.14 The main bus design issues concern its width, clocking, arbitration and
+operations. The width refers to the respective numbers of data- and address
+lines, with a compromise sometimes made by multiplexing them to save on wires
+at the cost of speed. Clocking, in turn, pertains to how connected devices are
+coordinated. A synchronous bus uses a clock to atune all activity to a multiple
+of its cycle time. Bus protocols, however, typically do not evolve as quick as
+the components they connect, and performance improvements in the latter may be
+hindered by a crawling bus clock catering to the slowest among the lot. To
+better anticipate on future developments, an asynchronous bus dispenses with the
+clock in favour of control signals implementing full handshakes. Next,
+arbitration is the method for deciding which among competing devices may become
+Master, being either centralized in a separate arbiter, or foregoing the latter
+for a decentralized solution. Finally, the bus operations are the concrete
+Master/Slave relations that it supports, like between I/O devices and the CPU
+for signalling interrupts, typically mediated through an interrupt controller
+acting as arbiter.
+
+III.15 The PCI (Peripheral Component Interconnect) bus has been the dominant
+choice for connecting I/O devices in most personal computers since the early
+nineties, replacing its ISA (Integrated System Architecture) predecessor. Both,
+however, are synchronous buses and proved impossible to adapt to advancements in
+performance of the devices they connect. More recently, the PCI Express (PCIe)
+architecture has been taking over the role of the I/O bus (in particular still
+being separated from the memory bus via a bridge chip), dispensing with the
+concepts of masters and slaves in exchange for point-to-point communication
+modeled after Local Area Networks. For attaching lower-speed peripherals like
+mice and keyboards, however, the costs of the PCI bus and PCIe would make them
+overkill, having lead to the creation of the USB (Universal Serial Bus) standard
+to fill the gap.
