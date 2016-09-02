@@ -13,8 +13,7 @@ instruction, and the Instruction Register (IR), pointing to the current one.
 I/O devices, in turn, come coupled with a controller, handling their interfacing
 with the software. Finally, buses connect the components both internal and
 external to the CPU, enabling the flow of address, data and control signals
-therebetween. When competing for bus access, I/O devices typically trump the
-CPU, causing it to stall in a process known as cycle stealing.
+therebetween.
 
 II.2 The physical arrangement of a computer's components is mediated by a
 printed circuit board called the motherboard, housing the CPU, the bus, memory
@@ -22,7 +21,7 @@ slots, integrated controllers, and sockets for plugging controllers distributed
 on a separate board into the bus. Connectors in the back of the caging allow for
 the attachment of I/O devices, being wired to the corresponding controllers.
 
-II.3 Controllers may require memory access, as needed, e.g., for writing the
+II.3 I/O controllers may require memory access, as needed, e.g., for writing the
 output received from their associated device after having issued some command
 thereon. If the CPU is circumvented, such Memory Access is called Direct, with
 the controller said to provide DMA. After writing its output to memory, a
@@ -111,46 +110,56 @@ the register size. Words may be represented in memory either by storing its
 bytes in Big Endian order, proceeding from most to least significant  (i.e., in
 decreasing order of weight), or in the reverse Little Endian order.
 
-II.13 Due to considerations of cost, the memory's speed is in practice inversely
-proportionate to its size. To prevent a large memory from becoming a performance
-bottleneck wasting many CPU cycles, a cost-effective solution is to install a
-smaller 'cache' memory en-route to the CPU. The success of this method hinges on
-the locality principle, recording the empirically observed correlation between
-the time duration separating two memory references and the vicinity of the
-corresponding locations in memory. Thus, any load from the latter will also pull
-surrounding bytes into one of the fixed-size blocks making up the logical
-division of the cache, and referred to by its cache lines. While traditionally
-unified caches were used for storing instructions and data together, the advent
-of pipelining has instead promoted their separate storage in a split cache.
-
-II.14 Memory chips, often of around 256MB each, are typically grouped by the 8
+II.13 Memory chips, often of around 256MB each, are typically grouped by the 8
 or 16 on a printed circuit board, usually 4 of which may be installed on the
 motherboard. Depending on which sides the connectors appear on, such units are
 referred to by either SIMM (Single Inline Memory Module), though now obsolete,
 or DIMM (Dual Inline Memory Module), having replaced it. Yet a third type is
-known by the more compact  SO-DIMM (Small Outline DIMM), used in notebooks.
+known by the more compact SO-DIMM (Small Outline DIMM), used in notebooks.
 
-II.15 the inverse proportionate relation of memorize size to its speed gives
+II.14 Due to considerations of cost, the memory's speed is in practice inversely
+proportionate to its size. To prevent a large memory from becoming a performance
+bottleneck, a cost-effective solution is to install a smaller 'cache' memory
+en-route to the CPU. The success of this method hinges on the spatial- and
+temporal locality principles, recording the empirically observed correlation
+between the time duration separating two memory references and the vicinity of
+the corresponding locations in memory, respectively the tendency for oft-
+referenced memory cells to be consulted again (as when, e.g., executing a loop).
+Whereas the latter provides a heuristic for deciding what to evict upon a cache
+miss in order to free up space, the former indicates the composition of the new
+contents that are to be brought in on such an event. Specifically, any load from
+memory will also pull surrounding bytes into one of the fixed-size blocks making
+up the logical division of the cache, and referred to by its cache lines.
+
+II.15 Though traditionally unified caches were used for storing instructions and
+data together, pipelining instead promoted their separate storage in a split
+cache to improve bandwith while preserving latency. In reality, often multiple
+caches are used, mixing both variants. For example, a small 'level 1' (L1) split
+cache of 16-48KB may be included on the CPU chip, next to a unified level 2
+cache of 512KB-1MB connected to the CPU by a dedicated high-speed bus, as well
+as a level 3 unified cache of up to several MB's appearing on the motherboard.
+
+II.16 The inverse proportionate relation of memorize size to its speed gives
 rise to a memory hierarchy, with the CPU registers, cache and main memory
 appearing in the top portion as the computer's volatile primary memory. Below
 them are found the secondary non-volatile memory devices, with magnetic and
 solid state disks used for permanent storage, and with tapes and optical discs
 (e.g., CD's, DVD's, Bluray) inhabiting the bottom layer for archival storage.
 
-II.16 Disks being I/O devices, they have associated controller chips. Though
+II.17 Disks being I/O devices, they have associated controller chips. Though
 initially appearing on a separate board, they were later paired with the disk
 in IDE drives (Integrated Drive Electronics), over time superseded by the
 ATA (AT Attachment) standards, with each incarnation upping the maximum bit
 transfer rate and/or storage capacity, to current theoretical limits of
 1.5GB/sec and up to 128PB of storage.
 
-II.17 SCSI disks offer an alternative to the line of IDE descendants, differing
+II.18 SCSI disks offer an alternative to the line of IDE descendants, differing
 in their interface and boasting a higher bit transfer rate. As a standard, SCSI
 (Small Computer System Interface) encompasses both a bus and peripheral devices
 of which up to 7 may be attached thereto, among which appear SCSI controllers
 and -disks, as well as, e.g., CD-ROMs, tapes, etc. 
 
-II.18 RAID (Redundant Array of Independent Disks) is a technology for connecting
+II.19 RAID (Redundant Array of Independent Disks) is a technology for connecting
 multiple disks to one controller that presents them as a unit to the operating
 system, thus enabling parallel I/O without requiring different software.
 Characteristic of a RAID is its distributed storage of data, for which six such
