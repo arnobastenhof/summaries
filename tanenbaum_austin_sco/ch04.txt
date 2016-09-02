@@ -1,0 +1,148 @@
+Andrew S. Tanenbaum and Todd Austin: Structured Computer Organization (6th ed.)
+Chapter 4, The Microarchitecture Level
+
+Summarized by Arno Bastenhof
+
+IV.1 The design of a computer's microarchitecture depends largely on the ISA it
+serves to implement, though usually it involves a microprogram for interpreting
+at least the complex instructions. The CPU's registers keep track of the ISA's
+state, and commonly include a Stack Pointer (SP), the address of the current
+frame's Local Variables (LV), as well as memory control registers. The latter in
+particular may provide the means for addressing memory both by byte and by word,
+benefiting from a split cache by fetching instructions into the Memory Byte
+Register (MBR) from the address found in the Program Counter (PC), and using the
+Memory Data Register (MDR) for reading and writing the word referenced in the
+Memory Address Register (MAR). Each register typically has associated control
+signals for driving its contents on a bus feeding one of the ALU's operands, as
+well as for storing the ALU's output, carried by a separate bus. Though multiple
+registers may be written, only one can be read per operand. A decoder may be
+used for enforcing this restriction, though at the cost of additional circuitry.
+
+IV.2 As an interpreter, a microprogram lends itself to Bell's threaded code
+technique. Per this design, the ISA's opcodes, typically then the size of a
+byte, map intro microinstructions by serving as addresses into the control store
+that houses them, often contained on a ROM. The correspondence being injective,
+it follows that it might not always be possible for subsequent microinstructions
+to also be collocated in memory. As opposed to littering the control store with
+unconditional jumps, instead a microinstruction may itself be made to contain
+its successor's address as part of its format, copying it at the conclusion of
+its execution to a dedicated register external to the CPU's data path called the
+MicroProgram Counter (MPC). To still allow for branching when appropriate, extra
+bits may be added to a microinstruction for enabling the dynamic modification of
+the value that gets stored in MPC. Specifically, multiway branches needed for
+switching on  the ISA's operations may be realized by zeroing out the least
+significant byte of the next address, and settng a bit that ORs it at runtime
+with the next opcode. Similarly, conditional jumps follow from zeroing the next
+address' most significant bit and having it set at runtime depending on if the
+ALU's output was Zero or Negative.
+
+IV.3 Outside of the next address and branch control, the remaining bits in a
+microinstruction serve as a binary encoding for directing one data path cycle.
+Typically, a single bit is needed per input signal, being so ordered as to
+obtain groupings by function (e.g., collocating those driving the ALU's input).
+The MicroInstruction Register acts as intermediate in wiring the control bits of
+a microinstruction to the appropriate signals, being loaded from the control
+store based on the MCP's contents.
+
+IV.4 The data path's finite propagation time conceptually divides its operation
+into several subcycles, starting with the initialization of its control signals
+at the falling edge of a clock cycle. Memory reads and writes comes last, being
+issued at the rising edge. Returning only at the end of the next data path cycle
+(on the unrealistic assumption of a 100% level 1 cache hit rate), an intervening
+microinstruction is in particular required before their results become available
+for inspection. Outside of the data path cycle, the clock's high pulse is used
+for loading MPC.
+
+IV.5 Cost in CPU design is today typically measured by the size of a chip's
+area, also referred to by its real estate. Efforts at keeping it in check often
+counteract those for improving speed, although, as with software, optimization
+should be preceded by careful performance analyses lest the primary bottlenecks
+remain unattended. In general, however, attempts at making a CPU run faster tend
+to fall in three categories, though usually showing significant overlap. First,
+the ISA instructions' path length may be shortened, referring to the amount of
+clock cycles required for their execution. Second, bar technical limitations,
+the clock cycle can usually be reduced by minimizing the number of operations
+that are performed in sequence therewithin. Finally, instruction execution may
+be overlapped, usually through pipelining.
+
+IV.6 Shortening the path length of instructions interpreted by a microprogram
+may be achieved by reducing the number of microinstructions that are executed.
+Sometimes, simple transformations of the microcode already suffice. For example,
+inlining a separate main loop will often reveal opportunities for, e.g.,
+utilizing dead cycles. At other times, additional hardware may be needed. A
+cheap design, for instance, utilizes a single bus for feeding one of the ALU's
+inputs from any chosen register, while using a dedicated accumulator (H) as the
+sole source of input for the other, consequentially requiring a shorter bus. On
+the other hand, operations on two registers other than H will nonetheless always
+have to go therethrough, thus requiring two cycles. Disposing of the accumulator
+in favour of two buses that may be driven by all registers achieves the same
+result by a single micoinstruction at the cost of more circuitry.
+
+IV.7 Instruction fetching and decoding heavily utilizes the ALU, involving it in
+incrementing the program counter and assembling 16-bit fields from their
+constituent bytes, read from memory one at a time. To further reduce the
+instruction path length, this functionality may be extracted from the data path
+into a separate Instruction Fetch Unit (IFU) with its own reduced ALU, typically
+stripped down to an incrementer, and overlapping its operation with that of the
+Functional Units. Seen from the data path, the IFU takes over responsibility for
+incrementing the PC and exposes multiple registers MARn (typically two) for
+reading various quantities n of bytes from the ISA-level program, which
+internally it streams from a queue wherein instructions are pre-fetched one word
+at a time. Besides implementing in hardware what previously took multiple
+microinstructions for fetching and decoding, the IFU additinally eliminates the
+main loop from the microprogram, guaranteeing MAR1 always contains the next
+opcode at the conclusion of an interpretive routine.
+
+IV.8 For most of a data path cycle, the ALU remains idle, waiting either for its
+operands or having already put the result of its computation back on the bus. A
+simple pipelined design improves throughput by sandwitching the ALU between
+latches that capture its in- and outputs, thus partitioning the data path into
+three independently operable parts (though requiring the same number of MIR
+registers for setting their control signals). By timing each to a single clock
+cycle, the latter may, to the extent technology so allows, be shortened in
+accordance with the reduced number of tasks that must be performed in sequence
+therewithin. At the same time, since all stages run in parallel, every clock
+cycle still sees one microinstruction finishing execution.
+
+IV.9 Pipelining works best for linear code blocks, but risks mistakenly
+executing instructions immediately following an unconditional jump. Logical
+correctness may be preserved by having the compiler insert NOP instructions,
+though at the cost of performance and an increase in size of the object code.
+Conditional branches pose an even greater challenge, with contemporary machines
+often attempting prediction. Since continuing execution in a consistent state
+after a wrong guess is a costly affair, much research has gone into improving
+these prediction algorithms. In general, backward jumps are indicative of a loop
+and so are expected to be taken, while forward jumps tend to be used for error
+handling and are hence assumed not to be taken. Various schemes for extending
+these simple heuristics exist, some operating at runtime while others requiring
+help from the compiler. Those of the former 'dynamic' type often use a history
+table for keeping track of whether any given branch was last taken, while in the
+latter 'static' category special branching instructions are added to the ISA,
+containing an extra bit for letting the compiler state its prediction.
+
+IV.10 The overlapping of different parts of successive microinstructions in a
+pipelined design risks stalling the CPU when one requires the results of the
+other; a situation alternatively referred to as a true- or RAW dependence, for
+Read After Write. When additionally multiple instructions can be issued per
+cycle, as with a superscalar machine, one may also encounter WAR- (Write After
+Read) and WAW (Write After Write) dependences, where one instruction writes to a
+register also accessed by its predecessor. The time spent waiting as a result of
+these dependences (collectively called hazards) is minimized by a combination
+register renaming and out-of-order execution. The former technique, backed by
+internal scratchpad registers hidden from the programmer's view (i.e., the ISA),
+primarily deals with WAR- and WAW dependencies. Allowing instructions to execute
+out of order, in turn, makes it possible for the time waiting on RAW dependences
+to be spend productively. In practice, however, many designs restrict to only
+issuing instructions out of order, still requiring them to retire (meaning,
+complete) in order so as to allow for precise interrupts; i.e., the ability to
+designate a specific address demarcating those instructions that have finished
+execution and those that haven't at the time an interrupt occurs.
+
+IV.11 Speculative execution extends instruction reordering to apply across basic
+blocks, typically with the intent of starting slow operations early. As blocks
+are separated by branchings, sometimes conditional, this in particular implies
+that the results might not always be needed. As such, care must be taken to
+control any side effects, encompassing both state modifications as well as the
+possibility of a cache miss, which might unnecessarily stall the CPU for many
+cycles. In practice, speculative execution cannot be wholly realized through
+hardware alone, but will always require assistance from the compiler.
