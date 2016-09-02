@@ -55,6 +55,6 @@ are microcontrollers, being embedded in devices that are themselves not
 marketed as computers. Mobile- and game computers constitute the next step
 up, being followed by the more general-purpose personal computers. The latter's
 high-end models are typically used as network servers, with clusters thereof
-typically housed in data centers. Finally, mainframes have outgrown their legacy
+often housed in data centers. Finally, mainframes have outgrown their legacy
 origins to find new use as powerful servers specialized for processing large
 volumes of data.
